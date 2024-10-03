@@ -1,70 +1,181 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, TextInput } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useNavigation } from '@react-navigation/native'; // Importa useNavigation para usar la navegación
+import { Button } from '@/components/ui/Button';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-
-export default function HomeScreen() {
+const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={styles.inputContainer}>
+      <TextInput
+        style={[styles.input, style]}
+        placeholderTextColor="#999"
+        {...props}
+      />
+    </View>
+  );
+};
+
+export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const navigation = useNavigation(); // Usa este hook para acceder a la navegación
+
+  const handleLogin = () => {
+    console.log('Login attempted with:', email, password);
+    // Implement your login logic here
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="auto" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('@/assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>Bienvenido a Chepeat</Text>
+        </View>
+        <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
+        <StyledInput
+          placeholder="Correo Electrónico"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={styles.inputStyle}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Diego <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <StyledInput
+          placeholder="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.inputStyle}
+        />
+        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.loginButton} />
+        <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
+
+        {/* Aquí está el divisor con "Oh" */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.line} />
+          <Text style={styles.dividerText}>Oh</Text>
+          <View style={styles.line} />
+        </View>
+
+        <View style={styles.signupContainer}>
+          <Text style={styles.signupText}>¿No tienes cuenta? Registrate ahora</Text>
+          <Button title="Crear Cuenta" 
+          onPress={() => navigation.navigate('explore')} // Redirige a la pantalla "Signup"
+          style={styles.signupButton}/>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    marginBottom: 0,
+    marginTop: 35,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 10, // Ajusta este valor para pegar el título al logo
+  },
+  logo: {
+    width: 250,
+    height: 250,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: -10, // Reduce este margen superior para acercarlo al logo
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 25,
+    height: 50,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    marginBottom: 15,
+  },
+  input: {
+    fontSize: 16,
+    color: '#333',
+  },
+  inputStyle: {
+    width: '100%',
+  },
+  loginButton: {
+    width: '100%',
+    marginBottom: 15,
+    backgroundColor: '#df1c24', // Color de fondo del botón
+    borderRadius: 25, // Redondeado
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  forgotPassword: {
+    color: '#df1c24',
+    fontSize: 14,
+    marginBottom: 20, // Ajusta este valor para la separación con el divisor
+  },
+  dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginVertical: 20, // Ajusta este valor para la separación del divisor
+    width: '100%',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ccc', // Color de la línea
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  dividerText: {
+    marginHorizontal: 10, // Espacio entre las líneas y el texto
+    color: '#999', // Color del texto "Oh"
+  },
+  signupContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  signupText: {
+    color: '#7e7e7e',
+    fontSize: 14,
+    marginBottom: 15,
+  },
+  signupButton: {
+    width: '100%',
+    backgroundColor: '#df1c24', // Color igual que el botón de iniciar sesión
+    borderRadius: 25, // Redondeado
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
   },
 });
+
