@@ -29,7 +29,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        {/* Agrega la pantalla de Login aquí */}
+    
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+        {/* Resto de las rutas */}
         <Stack.Screen name="+not-found" />
       </Stack>
     </ThemeProvider>
