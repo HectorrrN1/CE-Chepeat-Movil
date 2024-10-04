@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, TextInput, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native'; // Importa useNavigation para usar la navegación
+import { useNavigation } from '@react-navigation/native';
 import { Button } from '@/components/ui/Button';
+import { MaterialIcons } from '@expo/vector-icons'; // Importar los íconos
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
@@ -19,12 +20,42 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar la contraseña
+  const [emailError, setEmailError] = useState(''); // Estado para el error del email
+  const [passwordError, setPasswordError] = useState(''); // Estado para el error de la contraseña
 
-  const navigation = useNavigation(); // Usa este hook para acceder a la navegación
+  const navigation = useNavigation();
+
+  // Función para validar el correo
+  const validateEmail = () => {
+    const emailRegex = /.+@.+\..+/;
+    if (!emailRegex.test(email)) {
+      setEmailError('Por favor, ingresa un correo válido con @');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  // Función para validar la contraseña
+  const validatePassword = () => {
+    // Al menos 8 caracteres, incluyendo letras, números y permitiendo caracteres especiales
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*.,]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo letras, números y puede contener símbolos.');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
 
   const handleLogin = () => {
-    console.log('Login attempted with:', email, password);
-    // Implement your login logic here
+    validateEmail();
+    validatePassword();
+    if (!emailError && !passwordError) {
+      console.log('Login attempted with:', email, password);
+      // Lógica de login
+    }
   };
 
   return (
@@ -43,22 +74,41 @@ export default function LoginScreen() {
           <Text style={styles.title}>Bienvenido a Chepeat</Text>
         </View>
         <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
+
+        {/* Correo Electrónico */}
+        <Text style={styles.text}>Correo Electrónico</Text>
         <StyledInput
           placeholder="Correo Electrónico"
           value={email}
           onChangeText={setEmail}
+          onBlur={validateEmail} // Valida al perder foco
           keyboardType="email-address"
           autoCapitalize="none"
           style={styles.inputStyle}
         />
-        <StyledInput
-          placeholder="Contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.inputStyle}
-        />
-        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.loginButton} />
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+
+        {/* Contraseña */}
+        <Text style={styles.text}>Contraseña</Text>
+        <View style={styles.passwordContainer}>
+          <StyledInput
+            placeholder="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            onBlur={validatePassword} // Valida al perder foco
+            secureTextEntry={!showPassword}
+            style={styles.inputStyle}
+          />
+          <TouchableOpacity
+            style={styles.iconContainer}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
+          </TouchableOpacity>
+        </View>
+        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
         <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
 
         {/* Aquí está el divisor con "Oh" */}
@@ -69,10 +119,12 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>¿No tienes cuenta? Registrate ahora</Text>
-          <Button title="Crear Cuenta" 
-          onPress={() => navigation.navigate('register')} // Redirige a la pantalla "Signup"
-          style={styles.signupButton}/>
+          <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
+          <Button
+            title="Crear Cuenta"
+            onPress={() => navigation.navigate('register')}
+            style={styles.Button}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -94,7 +146,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 10, // Ajusta este valor para pegar el título al logo
+    marginBottom: 10,
   },
   logo: {
     width: 250,
@@ -104,7 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '600',
     color: '#333',
-    marginTop: -10, // Reduce este margen superior para acercarlo al logo
+    marginTop: -10,
   },
   subtitle: {
     fontSize: 16,
@@ -130,11 +182,24 @@ const styles = StyleSheet.create({
   inputStyle: {
     width: '100%',
   },
-  loginButton: {
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '100%',
-    marginBottom: 15,
-    backgroundColor: '#df1c24', // Color de fondo del botón
-    borderRadius: 25, // Redondeado
+    position: 'relative',
+  },
+  iconContainer: {
+    position: 'absolute',
+    right: 10,
+    zIndex: 1,
+    height: 40,
+    paddingHorizontal: 10, // Espacio alrededor del icono
+  },
+  Button: {
+    width: '100%',
+    marginBottom: 30,
+    backgroundColor: '#df1c24',
+    borderRadius: 25,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
@@ -142,22 +207,22 @@ const styles = StyleSheet.create({
   forgotPassword: {
     color: '#df1c24',
     fontSize: 14,
-    marginBottom: 20, // Ajusta este valor para la separación con el divisor
+    marginBottom: 10,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20, // Ajusta este valor para la separación del divisor
+    marginVertical: 10,
     width: '100%',
   },
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc', // Color de la línea
+    backgroundColor: '#ccc',
   },
   dividerText: {
-    marginHorizontal: 10, // Espacio entre las líneas y el texto
-    color: '#999', // Color del texto "Oh"
+    marginHorizontal: 10,
+    color: '#999',
   },
   signupContainer: {
     alignItems: 'center',
@@ -166,16 +231,18 @@ const styles = StyleSheet.create({
   signupText: {
     color: '#7e7e7e',
     fontSize: 14,
-    marginBottom: 15,
+    marginBottom: 20,
+    marginTop: 10,
   },
-  signupButton: {
-    width: '100%',
-    backgroundColor: '#df1c24', // Color igual que el botón de iniciar sesión
-    borderRadius: 25, // Redondeado
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
+  text: {
+    width: '97%',
+    height: 25,
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+    fontSize: 12,
   },
 });
-
