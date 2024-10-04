@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from 'expo-checkbox';
-import { Picker } from '@react-native-picker/picker';  // Importa Picker
+import { Picker } from '@react-native-picker/picker';
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
@@ -24,13 +24,24 @@ export default function register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [userType, setUserType] = useState('Cliente');  // Nueva variable para el Dropdown
+  const [userType, setUserType] = useState('Cliente');  // Estado para el tipo de usuario
+  const [storeName, setStoreName] = useState('');
+  const [street, setStreet] = useState('');
+  const [extNumber, setExtNumber] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [cp, setCP] = useState('');
+  const [addressNotes, setAddressNotes] = useState('');
 
   const router = useRouter();
 
   const handleRegister = () => {
     console.log('Registration attempted with:', name, email, password, userType);
-    // Logica para el registro
+    if (userType === 'Negocio') {
+      console.log('Business details:', storeName, street, extNumber, neighborhood, city, state, cp, addressNotes);
+    }
+    // Lógica para el registro
   };
 
   return (
@@ -48,18 +59,20 @@ export default function register() {
           />
           <Text style={styles.imageText}>Chepeat</Text>
         </View>
+
         <View style={styles.dropdownContainer}>
-        <Text style={styles.title}>Registrate</Text>
-        <Picker
-          selectedValue={userType}
-          style={styles.pickerStyle}
-          onValueChange={(itemValue) => setUserType(itemValue)}
-        >
-          <Picker.Item label="Cliente" value="Cliente" />
-          <Picker.Item label="Negocio" value="Negocio" />
-        </Picker>
+          <Text style={styles.title}>Registrate</Text>
+          <Picker
+            selectedValue={userType}
+            style={styles.pickerStyle}
+            onValueChange={(itemValue) => setUserType(itemValue)}
+          >
+            <Picker.Item label="Cliente" value="Cliente" />
+            <Picker.Item label="Negocio" value="Negocio" />
+          </Picker>
         </View>
 
+        {/* Campos generales */}
         <StyledInput
           placeholder="Nombre completo"
           value={name}
@@ -90,6 +103,60 @@ export default function register() {
           style={styles.inputStyle}
         />
 
+        {/* Formulario adicional para Negocio */}
+        {userType === 'Negocio' && (
+          <View style={styles.businessForm}>
+            <StyledInput
+              placeholder="Nombre del Negocio"
+              value={storeName}
+              onChangeText={setStoreName}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Calle"
+              value={street}
+              onChangeText={setStreet}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Número Exterior"
+              value={extNumber}
+              onChangeText={setExtNumber}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Colonia"
+              value={neighborhood}
+              onChangeText={setNeighborhood}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Ciudad"
+              value={city}
+              onChangeText={setCity}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Estado"
+              value={state}
+              onChangeText={setState}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Código Postal"
+              value={cp}
+              onChangeText={setCP}
+              style={styles.inputStyle}
+            />
+            <StyledInput
+              placeholder="Notas de Dirección"
+              value={addressNotes}
+              onChangeText={setAddressNotes}
+              style={styles.inputStyle}
+            />
+          </View>
+        )}
+
         <View style={styles.checkboxContainer}>
           <Checkbox
             value={acceptTerms}
@@ -100,6 +167,7 @@ export default function register() {
             Acepto los <Text style={styles.link}>términos y condiciones</Text>
           </Text>
         </View>
+
         <Button title="Registrar" onPress={handleRegister} style={styles.formButton} />
 
         <View style={styles.formContainer}>
@@ -112,7 +180,11 @@ export default function register() {
   );
 }
 
+
 const styles = StyleSheet.create({
+  businessForm: {
+    width: '100%',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
