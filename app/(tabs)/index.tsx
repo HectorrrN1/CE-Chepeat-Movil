@@ -122,7 +122,11 @@ export default function LoginScreen() {
           <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
 <<<<<<< HEAD
           <Button title="Crear Cuenta" 
+<<<<<<< HEAD
           onPress={() => navigation.navigate('/explore')} // Redirige a la pantalla "Signup"
+=======
+          onPress={() => navigation.navigate('register')} // Redirige a la pantalla "Signup"
+>>>>>>> b68e7ffc65e22d59b749d239d04d7a358ac6c17b
           style={styles.signupButton}/>
 =======
           <Button
