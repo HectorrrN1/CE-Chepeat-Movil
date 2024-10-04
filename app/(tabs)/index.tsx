@@ -71,7 +71,7 @@ export default function LoginScreen() {
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>¿No tienes cuenta? Registrate ahora</Text>
           <Button title="Crear Cuenta" 
-          onPress={() => navigation.navigate('explore')} // Redirige a la pantalla "Signup"
+          onPress={() => navigation.navigate('register')} // Redirige a la pantalla "Signup"
           style={styles.signupButton}/>
         </View>
       </KeyboardAvoidingView>
