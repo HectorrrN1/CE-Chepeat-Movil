@@ -64,14 +64,14 @@ export default function LoginScreen() {
         {/* Aquí está el divisor con "Oh" */}
         <View style={styles.dividerContainer}>
           <View style={styles.line} />
-          <Text style={styles.dividerText}>Oh</Text>
+          <Text style={styles.dividerText}>o</Text>
           <View style={styles.line} />
         </View>
-
+ 
         <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>¿No tienes cuenta? Registrate ahora</Text>
+          <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
           <Button title="Crear Cuenta" 
-          onPress={() => navigation.navigate('explore')} // Redirige a la pantalla "Signup"
+          onPress={() => navigation.navigate('/explore')} // Redirige a la pantalla "Signup"
           style={styles.signupButton}/>
         </View>
       </KeyboardAvoidingView>
