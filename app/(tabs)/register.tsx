@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, Image, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +24,7 @@ export default function register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [userType, setUserType] = useState('Cliente');  // Estado para el tipo de usuario
+  const [userType, setUserType] = useState('Cliente');  
   const [storeName, setStoreName] = useState('');
   const [street, setStreet] = useState('');
   const [extNumber, setExtNumber] = useState('');
@@ -51,151 +51,152 @@ export default function register() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.imageTextContainer}>
-          <Image
-            source={require('@/assets/images/tenecuchillo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.imageText}>Chepeat</Text>
-        </View>
-
-        <View style={styles.dropdownContainer}>
-          <Text style={styles.title}>Registrate</Text>
-          <Picker
-            selectedValue={userType}
-            style={styles.pickerStyle}
-            onValueChange={(itemValue) => setUserType(itemValue)}
-          >
-            <Picker.Item label="Cliente" value="Cliente" />
-            <Picker.Item label="Negocio" value="Negocio" />
-          </Picker>
-        </View>
-
-        {/* Campos generales */}
-        <StyledInput
-          placeholder="Nombre completo"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          style={styles.inputStyle}
-        />
-        <StyledInput
-          placeholder="Correo electrónico"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.inputStyle}
-        />
-        <StyledInput
-          placeholder="Contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.inputStyle}
-        />
-        <StyledInput
-          placeholder="Confirmar contraseña"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={styles.inputStyle}
-        />
-
-        {/* Formulario adicional para Negocio */}
-        {userType === 'Negocio' && (
-          <View style={styles.businessForm}>
-            <StyledInput
-              placeholder="Nombre del Negocio"
-              value={storeName}
-              onChangeText={setStoreName}
-              style={styles.inputStyle}
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.imageTextContainer}>
+            <Image
+              source={require('@/assets/images/tenecuchillo.png')}
+              style={styles.logo}
+              resizeMode="contain"
             />
-            <StyledInput
-              placeholder="Calle"
-              value={street}
-              onChangeText={setStreet}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Número Exterior"
-              value={extNumber}
-              onChangeText={setExtNumber}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Colonia"
-              value={neighborhood}
-              onChangeText={setNeighborhood}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Ciudad"
-              value={city}
-              onChangeText={setCity}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Estado"
-              value={state}
-              onChangeText={setState}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Código Postal"
-              value={cp}
-              onChangeText={setCP}
-              style={styles.inputStyle}
-            />
-            <StyledInput
-              placeholder="Notas de Dirección"
-              value={addressNotes}
-              onChangeText={setAddressNotes}
-              style={styles.inputStyle}
-            />
+            <Text style={styles.imageText}>Chepeat</Text>
           </View>
-        )}
 
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            value={acceptTerms}
-            onValueChange={setAcceptTerms}
-            color={acceptTerms ? '#df1c24' : undefined}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.title}>Registrate</Text>
+            <Picker
+              selectedValue={userType}
+              style={styles.pickerStyle}
+              onValueChange={(itemValue) => setUserType(itemValue)}
+            >
+              <Picker.Item label="Cliente" value="Cliente" />
+              <Picker.Item label="Negocio" value="Negocio" />
+            </Picker>
+          </View>
+
+          {/* Campos generales */}
+          <StyledInput
+            placeholder="Nombre completo"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            style={styles.inputStyle}
           />
-          <Text style={styles.checkboxLabel}>
-            Acepto los <Text style={styles.link}>términos y condiciones</Text>
-          </Text>
-        </View>
+          <StyledInput
+            placeholder="Correo electrónico"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.inputStyle}
+          />
+          <StyledInput
+            placeholder="Contraseña"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.inputStyle}
+          />
+          <StyledInput
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            style={styles.inputStyle}
+          />
 
-        <Button title="Registrar" onPress={handleRegister} style={styles.formButton} />
+          {/* Formulario adicional para Negocio */}
+          {userType === 'Negocio' && (
+            <View style={styles.businessForm}>
+              <StyledInput
+                placeholder="Nombre del Negocio"
+                value={storeName}
+                onChangeText={setStoreName}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Calle"
+                value={street}
+                onChangeText={setStreet}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Número Exterior"
+                value={extNumber}
+                onChangeText={setExtNumber}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Colonia"
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Ciudad"
+                value={city}
+                onChangeText={setCity}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Estado"
+                value={state}
+                onChangeText={setState}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Código Postal"
+                value={cp}
+                onChangeText={setCP}
+                style={styles.inputStyle}
+              />
+              <StyledInput
+                placeholder="Notas de Dirección"
+                value={addressNotes}
+                onChangeText={setAddressNotes}
+                style={styles.inputStyle}
+              />
+            </View>
+          )}
 
-        <View style={styles.formContainer}>
-          <Text style={styles.formText}>
-            ¿Ya tienes cuenta? <Text style={styles.link} onPress={() => router.push('/explore')}>Inicia sesión</Text>
-          </Text>
-        </View>
+          <View style={styles.checkboxContainer}>
+            <Checkbox
+              value={acceptTerms}
+              onValueChange={setAcceptTerms}
+              color={acceptTerms ? '#df1c24' : undefined}
+            />
+            <Text style={styles.checkboxLabel}>
+              Acepto los <Text style={styles.link}>términos y condiciones</Text>
+            </Text>
+          </View>
+
+          <Button title="Registrar" onPress={handleRegister} style={styles.formButton} />
+
+          <View style={styles.formContainer}>
+            <Text style={styles.formText}>
+              ¿Ya tienes cuenta? <Text style={styles.link} onPress={() => router.push('/')}>Inicia sesión</Text>
+            </Text>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-
 const styles = StyleSheet.create({
-  businessForm: {
-    width: '100%',
-  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 0,
+    marginTop: 35,
   },
-  keyboardAvoidingView: {
-    flex: 1,
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 150,
+    paddingTop: 20,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   imageTextContainer: {
     position: 'absolute',
@@ -291,6 +292,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 100,
+  },
+  businessForm: {
+    width: '100%',
   },
 });
 
