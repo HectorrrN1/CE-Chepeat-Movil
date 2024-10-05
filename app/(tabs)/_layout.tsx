@@ -8,7 +8,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false, // Oculta los encabezados si no los quieres
       }}>
-      <Stack.Screen name="login"/>
+      <Stack.Screen name="index"/>
       <Stack.Screen name="register"/>
     </Stack>
   );
