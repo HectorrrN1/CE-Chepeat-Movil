@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '@/components/ui/Button';
 import { MaterialIcons } from '@expo/vector-icons'; // Importar los íconos
+import { useRouter } from 'expo-router';
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
@@ -25,6 +26,7 @@ export default function LoginScreen() {
   const [passwordError, setPasswordError] = useState(''); // Estado para el error de la contraseña
 
   const navigation = useNavigation();
+  const router = useRouter();
 
   // Función para validar el correo
   const validateEmail = () => {
@@ -109,12 +111,15 @@ export default function LoginScreen() {
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
         <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
-        <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
+        
+        <Text style={styles.forgotPassword}>
+          <Text onPress={() => router.push('/explore')}>¿Olvidaste tu contraseña?</Text>
+          </Text>
 
         {/* Aquí está el divisor con "Oh" */}
         <View style={styles.dividerContainer}>
           <View style={styles.line} />
-          <Text style={styles.dividerText}>Oh</Text>
+          <Text style={styles.dividerText}>O</Text>
           <View style={styles.line} />
         </View>
 
@@ -122,7 +127,7 @@ export default function LoginScreen() {
           <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
           <Button
             title="Crear Cuenta"
-            onPress={() => navigation.navigate('register')}
+            onPress={() => router.push('/register')}
             style={styles.Button}
           />
         </View>
