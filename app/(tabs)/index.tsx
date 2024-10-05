@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  TextInput,
+  TouchableOpacity,
+  ScrollView, // Importar ScrollView
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native';
 import { Button } from '@/components/ui/Button';
-import { MaterialIcons } from '@expo/vector-icons'; // Importar los íconos
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
@@ -21,14 +31,12 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar la contraseña
-  const [emailError, setEmailError] = useState(''); // Estado para el error del email
-  const [passwordError, setPasswordError] = useState(''); // Estado para el error de la contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  const navigation = useNavigation();
   const router = useRouter();
 
-  // Función para validar el correo
   const validateEmail = () => {
     const emailRegex = /.+@.+\..+/;
     if (!emailRegex.test(email)) {
@@ -39,9 +47,7 @@ export default function LoginScreen() {
     return true;
   };
 
-  // Función para validar la contraseña
   const validatePassword = () => {
-    // Al menos 8 caracteres, incluyendo letras, números y permitiendo caracteres especiales
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*.,]{8,}$/;
     if (!passwordRegex.test(password)) {
       setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo letras, números y puede contener símbolos.');
@@ -67,70 +73,72 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.title}>Bienvenido a Chepeat</Text>
-        </View>
-        <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Bienvenido a Chepeat</Text>
+          </View>
+          <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
 
-        {/* Correo Electrónico */}
-        <Text style={styles.text}>Correo Electrónico</Text>
-        <StyledInput
-          placeholder="Correo Electrónico"
-          value={email}
-          onChangeText={setEmail}
-          onBlur={validateEmail} // Valida al perder foco
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.inputStyle}
-        />
-        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-        {/* Contraseña */}
-        <Text style={styles.text}>Contraseña</Text>
-        <View style={styles.passwordContainer}>
+          {/* Correo Electrónico */}
+          <Text style={styles.text}>Correo Electrónico</Text>
           <StyledInput
-            placeholder="Contraseña"
-            value={password}
-            onChangeText={setPassword}
-            onBlur={validatePassword} // Valida al perder foco
-            secureTextEntry={!showPassword}
+            placeholder="Correo Electrónico"
+            value={email}
+            onChangeText={setEmail}
+            onBlur={validateEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
             style={styles.inputStyle}
           />
-          <TouchableOpacity
-            style={styles.iconContainer}
-            onPress={() => setShowPassword(!showPassword)}
-          >
-            <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
-          </TouchableOpacity>
-        </View>
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-        <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
-        
-        <Text style={styles.forgotPassword}>
-          <Text onPress={() => router.push('/explore')}>¿Olvidaste tu contraseña?</Text>
+          {/* Contraseña */}
+          <Text style={styles.text}>Contraseña</Text>
+          <View style={styles.passwordContainer}>
+            <StyledInput
+              placeholder="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              onBlur={validatePassword}
+              secureTextEntry={!showPassword}
+              style={styles.inputStyle}
+            />
+            <TouchableOpacity
+              style={styles.iconContainer}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
+            </TouchableOpacity>
+          </View>
+          {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+          <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
+          
+          <Text style={styles.forgotPassword}>
+            <Text onPress={() => router.push('/explore')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
-        {/* Aquí está el divisor con "Oh" */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>O</Text>
-          <View style={styles.line} />
-        </View>
+          {/* Divisor con "Oh" */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.line} />
+            <Text style={styles.dividerText}>O</Text>
+            <View style={styles.line} />
+          </View>
 
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
-          <Button
-            title="Crear Cuenta"
-            onPress={() => router.push('/register')}
-            style={styles.Button}
-          />
-        </View>
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
+            <Button
+              title="Crear Cuenta"
+              onPress={() => router.push('/register')}
+              style={styles.Button}
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -145,9 +153,12 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 0,
   },
   logoContainer: {
     alignItems: 'center',
@@ -198,7 +209,7 @@ const styles = StyleSheet.create({
     right: 10,
     zIndex: 1,
     height: 40,
-    paddingHorizontal: 10, // Espacio alrededor del icono
+    paddingHorizontal: 10,
   },
   Button: {
     width: '100%',
@@ -243,7 +254,7 @@ const styles = StyleSheet.create({
     width: '97%',
     height: 25,
     fontSize: 16,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   errorText: {
     color: 'red',
