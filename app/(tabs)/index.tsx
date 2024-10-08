@@ -1,19 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  TextInput,
-  TouchableOpacity,
-  ScrollView, // Importar ScrollView
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '@/components/ui/Button';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons'; // Importar los íconos
 import { useRouter } from 'expo-router';
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
@@ -31,12 +20,13 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar la contraseña
+  const [emailError, setEmailError] = useState(''); // Estado para el error del email
+  const [passwordError, setPasswordError] = useState(''); // Estado para el error de la contraseña
 
   const router = useRouter();
 
+  // Función para validar el correo
   const validateEmail = () => {
     const emailRegex = /.+@.+\..+/;
     if (!emailRegex.test(email)) {
@@ -47,6 +37,7 @@ export default function LoginScreen() {
     return true;
   };
 
+  // Función para validar la contraseña
   const validatePassword = () => {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*.,]{8,}$/;
     if (!passwordRegex.test(password)) {
@@ -73,7 +64,12 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false} // Esto elimina el indicador de scroll vertical
+        bounces={false} // Para evitar el rebote en iOS
+        overScrollMode="never" // Para evitar el efecto overscroll en Android
+>
           <View style={styles.logoContainer}>
             <Image
               source={require('@/assets/images/logo.png')}
@@ -90,7 +86,7 @@ export default function LoginScreen() {
             placeholder="Correo Electrónico"
             value={email}
             onChangeText={setEmail}
-            onBlur={validateEmail}
+            onBlur={validateEmail} // Valida al perder foco
             keyboardType="email-address"
             autoCapitalize="none"
             style={styles.inputStyle}
@@ -104,7 +100,7 @@ export default function LoginScreen() {
               placeholder="Contraseña"
               value={password}
               onChangeText={setPassword}
-              onBlur={validatePassword}
+              onBlur={validatePassword} // Valida al perder foco
               secureTextEntry={!showPassword}
               style={styles.inputStyle}
             />
@@ -118,12 +114,12 @@ export default function LoginScreen() {
           {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
           <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
-          
+
           <Text style={styles.forgotPassword}>
             <Text onPress={() => router.push('/explore')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
-          {/* Divisor con "Oh" */}
+          {/* Aquí está el divisor con "Oh" */}
           <View style={styles.dividerContainer}>
             <View style={styles.line} />
             <Text style={styles.dividerText}>O</Text>
@@ -153,12 +149,14 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  scrollContainer: {
+  scrollViewContent: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 0,
   },
   logoContainer: {
     alignItems: 'center',
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
     right: 10,
     zIndex: 1,
     height: 40,
-    paddingHorizontal: 10,
+    paddingHorizontal: 10, // Espacio alrededor del icono
   },
   Button: {
     width: '100%',
