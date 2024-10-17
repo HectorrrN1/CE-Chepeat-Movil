@@ -52,8 +52,8 @@ export default function LoginScreen() {
     validateEmail();
     validatePassword();
     if (!emailError && !passwordError) {
+      router.push('/home')
       console.log('Login attempted with:', email, password);
-      // Lógica de login
     }
   };
 
@@ -130,7 +130,7 @@ export default function LoginScreen() {
             <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
             <Button
               title="Crear Cuenta"
-              onPress={() => router.push('/register')}
+              onPress={() => router.push('/home')}
               style={styles.Button}
             />
           </View>
