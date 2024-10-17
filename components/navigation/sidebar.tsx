@@ -26,7 +26,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       duration: 300,
       useNativeDriver: false,
     }).start();
-    onToggle();
+    onToggle(); // Mantener la animación al tocar fuera del botón de cerrar sesión
+  };
+
+  // Función para cerrar sesión con un pequeño retraso
+  const handleLogout = () => {
+    // Primero cierra el sidebar
+    handleToggle();
+
+    // Luego agrega un delay antes de redirigir a la pantalla de logout
+    setTimeout(() => {
+      router.push('/'); // Navegar a la pantalla de logout después del delay
+    }, 300); // 300ms de delay para esperar el cierre del sidebar
   };
 
   return (
@@ -38,34 +49,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </Animated.View>
         </TouchableOpacity>
       </View>
-      <View style={styles.profileSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>U</Text>
+      
+      {/* Contenido del perfil y menú */}
+      <View style={styles.contentContainer}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>U</Text>
+          </View>
+          <Text style={styles.greeting}>Hola</Text>
+          <Text style={styles.username}>Usuario</Text>
         </View>
-        <Text style={styles.greeting}>Hola</Text>
-        <Text style={styles.username}>Usuario</Text>
+
+        <View style={styles.menuItems}>
+          <TouchableOpacity style={styles.menuItem}>
+            <Feather name="user" size={24} color="black" />
+            <Text style={styles.menuItemText}>Mi cuenta</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Feather name="file-text" size={24} color="black" />
+            <Text style={styles.menuItemText}>Términos y condiciones</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Feather name="package" size={24} color="black" />
+            <Text style={styles.menuItemText}>Mis productos</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.menuItems}>
-        <TouchableOpacity style={styles.menuItem}>
-          <Feather name="user" size={24} color="black" />
-          <Text style={styles.menuItemText}>Mi cuenta</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Feather name="file-text" size={24} color="black" />
-          <Text style={styles.menuItemText}>Términos y condiciones</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Feather name="package" size={24} color="black" />
-          <Text style={styles.menuItemText}>Mis productos</Text>
-        </TouchableOpacity>
-      </View>
+
       {/* Botón para Cerrar Sesión */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() => router.push('/')} // Navega a la pantalla de logout
-      >
-        <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
-      </TouchableOpacity>
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout} // Usar la nueva función con delay
+        >
+          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -80,6 +99,9 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'flex-end',
     marginBottom: 20,
+  },
+  contentContainer: {
+    flex: 1, // Permitir que este contenedor ocupe todo el espacio disponible
   },
   profileSection: {
     alignItems: 'center',
@@ -119,6 +141,10 @@ const styles = StyleSheet.create({
   menuItemText: {
     marginLeft: 15,
     fontSize: 16,
+  },
+  logoutContainer: {
+    justifyContent: 'flex-end', // Empujar el botón de cerrar sesión hacia abajo
+    paddingBottom: 20, // Un poco de espacio para que no esté pegado al borde inferior
   },
   logoutButton: {
     borderWidth: 2,
