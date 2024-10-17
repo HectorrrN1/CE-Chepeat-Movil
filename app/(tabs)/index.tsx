@@ -54,6 +54,7 @@ export default function LoginScreen() {
     if (!emailError && !passwordError) {
       console.log('Login attempted with:', email, password);
       // Lógica de login
+      router.push('/homeBuyer');
     }
   };
 
