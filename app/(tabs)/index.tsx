@@ -117,7 +117,7 @@ export default function LoginScreen() {
           <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
 
           <Text style={styles.forgotPassword}>
-            <Text onPress={() => router.push('/explore')}>¿Olvidaste tu contraseña?</Text>
+            <Text onPress={() => router.push('/')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
           {/* Aquí está el divisor con "Oh" */}
