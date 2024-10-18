@@ -49,14 +49,19 @@ export default function LoginScreen() {
   };
 
   const handleLogin = () => {
-    validateEmail();
-    validatePassword();
-    if (!emailError && !passwordError) {
+    const isEmailValid = validateEmail();  // Ejecuta la validación del correo
+    const isPasswordValid = validatePassword();  // Ejecuta la validación de la contraseña
+  
+    // Solo si ambas validaciones son correctas, se procede con el inicio de sesión
+    if (isEmailValid && isPasswordValid) {
       console.log('Login attempted with:', email, password);
       // Lógica de login
       router.push('/homeBuyer');
+    } else {
+      console.log('Validation failed. Email Error:', emailError, 'Password Error:', passwordError);
     }
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>

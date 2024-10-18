@@ -73,7 +73,7 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Feather name="tag" size={24} color="black" />
-            <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
+            <Text style={styles.menuItemText} onPress={() => router.push('/home')}>Quiero ser vendedor</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Feather name="file-text" size={24} color="black" />

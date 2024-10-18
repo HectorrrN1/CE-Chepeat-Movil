@@ -95,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             style={styles.menuItem}
             onPress={() => {
               handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/explore'), 300); // Esperar 300ms antes de redirigir
+              setTimeout(() => router.push('/homeBuyer'), 300); // Esperar 300ms antes de redirigir
             }}>
             <Feather name="shopping-bag" size={24} color="black" />
             <Text style={styles.menuItemText}>Modo comprador</Text>
