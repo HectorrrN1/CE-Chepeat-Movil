@@ -131,7 +131,7 @@ export default function LoginScreen() {
             <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
             <Button
               title="Crear Cuenta"
-              onPress={() => router.push('/home')}
+              onPress={() => router.push('/register')}
               style={styles.Button}
             />
           </View>
