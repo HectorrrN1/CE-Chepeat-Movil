@@ -1,19 +1,21 @@
-import React, { FC } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useRef, FC } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Modal, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import Sidebar from '@/components/navigation/sidebar';
 
 // Define la interfaz para los props del componente
 interface ProductItemProps {
   name: string;
   price: string;
   status: string;
-  imageUrl: string;
+  imageUrl: any; // Cambiamos el tipo a 'any' para permitir 'require'
 }
 
 // Aplica la interfaz a los props del componente
 const ProductItem: FC<ProductItemProps> = ({ name, price, status, imageUrl }) => (
   <View style={styles.productItem}>
-    <Image source={{ uri: imageUrl }} style={styles.productImage} />
+    <Image source={imageUrl} style={styles.productImage} />
     <View style={styles.productInfo}>
       <Text style={styles.productName}>{name}</Text>
       <Text style={styles.productPrice}>${price} por lb</Text>
@@ -25,47 +27,110 @@ const ProductItem: FC<ProductItemProps> = ({ name, price, status, imageUrl }) =>
 );
 
 export default function VendorProductList() {
+  const router = useRouter(); // Hook para navegar entre pantallas
+
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
+
+  // Función para ocultar el sidebar con animación 'timing'
+  const closeSidebar = () => {
+    Animated.timing(slideAnim, {
+      toValue: -300,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start(() => {
+      setSidebarVisible(false);
+      setOverlayVisible(false);
+    });
+  };
+
+  // Función para mostrar el sidebar y el overlay
+  const openSidebar = () => {
+    setOverlayVisible(true);
+    setSidebarVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Feather name="menu" size={24} color="black" />
+        <TouchableOpacity onPress={openSidebar}>
+          <Feather name="menu" size={24} color="black" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Vendedor Cheapeat</Text>
         <View style={styles.headerIcons}>
           <Feather name="bell" size={24} color="black" style={styles.icon} />
-          <Feather name="settings" size={24} color="black" />
         </View>
       </View>
       <View style={styles.subHeader}>
         <Text style={styles.subHeaderTitle}>Tus Productos</Text>
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/addProductSeller')}
+        >
           <Text style={styles.addButtonText}>Añadir Nuevo</Text>
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.productList}>
-        <ProductItem
-          name="Tomates Orgánicos"
-          price="3.50"
-          status="En Stock"
-          imageUrl="https://example.com/tomato.jpg"
-        />
-        <ProductItem
-          name="Papas Orgánicas"
-          price="1.20"
-          status="En Stock"
-          imageUrl="https://example.com/potato.jpg"
-        />
-        <ProductItem
-          name="Zanahorias Orgánicas"
-          price="2.00"
-          status="Agotado"
-          imageUrl="https://example.com/carrot.jpg"
-        />
+        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+          <ProductItem
+            name="Tomates Orgánicos"
+            price="3.50"
+            status="En Stock"
+            imageUrl={require('@/assets/images/tomate.jpg')}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+          <ProductItem
+            name="Papas Orgánicas"
+            price="1.20"
+            status="En Stock"
+            imageUrl={require('@/assets/images/papas.jpg')}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+          <ProductItem
+            name="Zanahorias Orgánicas"
+            price="2.00"
+            status="Agotado"
+            imageUrl={require('@/assets/images/carrots.jpg')}
+          />
+        </TouchableOpacity>
       </ScrollView>
+
       <View style={styles.navbar}>
-        <Feather name="home" size={24} color="black" />
-        <Feather name="list" size={24} color="black" />
-        <Feather name="user" size={24} color="black" />
+        <TouchableOpacity onPress={() => router.push('/home')}>
+          <Feather name="home" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
+          <Feather name="list" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/profileSeller')}>
+          <Feather name="user" size={24} color="black" />
+        </TouchableOpacity>
       </View>
+
+      {/* Modal para el sidebar */}
+      <Modal
+        transparent={true}
+        visible={sidebarVisible}
+        animationType="none"
+        onRequestClose={closeSidebar}
+      >
+        {overlayVisible && (
+          <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />
+        )}
+        <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
+          <Sidebar isOpen={sidebarVisible} onToggle={closeSidebar} />
+        </Animated.View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -74,6 +139,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    marginTop: 35,
   },
   header: {
     flexDirection: 'row',
@@ -86,6 +152,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#999',
   },
   headerIcons: {
     flexDirection: 'row',
@@ -104,10 +171,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addButton: {
-    backgroundColor: '#ff0000',
+    backgroundColor: '#df1c24',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 25,
   },
   addButtonText: {
     color: '#fff',
@@ -157,5 +224,25 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+  },
+  sidebarContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 300,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 });

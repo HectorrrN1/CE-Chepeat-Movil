@@ -88,34 +88,67 @@ export default function ProductManagement() {
       </View>
 
       <ScrollView style={styles.content}>
+
+        {/*<TouchableOpacity onPress={() => router.push(`/productDetail?name=${name}`)}>
+          <View style={styles.productItemContainer}>
+            <View style={styles.productItem}>
+              <Image source={image} style={styles.productImage} />
+              <View style={styles.productInfo}>
+                <Text style={styles.productName}>{name}</Text>
+                <Text style={styles.productPrice}>${price}</Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+        */}
         <Text style={styles.sectionTitle}>Mis Productos</Text>
         <View style={styles.productContainer}>
-          <ProductItem 
-            name="Verduras Frescas" 
-            price="12.99" 
-            image={require('@/assets/images/verduras.jpg')} 
-          />
+          <TouchableOpacity
+            onPress={() => router.push(`/productDetailSeller`)}
+            activeOpacity={1}
+          >
+            <ProductItem
+              name="Verduras Frescas"
+              price="12.99"
+              image={require('@/assets/images/verduras.jpg')}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push(`/productDetailSeller`)}
+            activeOpacity={1}
+          >
           <ProductItem 
             name="Pan Artesanal" 
             price="5.50" 
             image={require('@/assets/images/pan.jpg')} 
           />
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push('/sellerProducts')} // Usa el nombre de la pantalla
+          onPress={() => router.push('/addProductSeller')} // Usa el nombre de la pantalla
         >
           <Text style={styles.addButtonText}>Agregar Producto</Text>
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Solicitudes de Productos</Text>
         <View style={styles.productContainer}>
-          <View style={styles.sectionContainer}>
-            <RequestItem name="Juan Pablo" time="Hace 2 horas" />
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push(`/userProfile`)}
+            activeOpacity={1}
+          >
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Juan Pablo" time="Hace 2 horas" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push(`/userProfile`)}
+            activeOpacity={1}
+          >
           <View style={styles.sectionContainer}>
             <RequestItem name="Emily Johnson quiere comprar Pan Artesanal" time="Ayer" />
           </View>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.sectionTitle}>Historial de Compras</Text>
@@ -129,10 +162,19 @@ export default function ProductManagement() {
         </View>
       </ScrollView>
 
+      {/* Navbar con redirección */}
       <View style={styles.navbar}>
-        <Feather name="home" size={24} color="black" />
-        <Feather name="shopping-cart" size={24} color="black" />
-        <Feather name="user" size={24} color="black" />
+        <TouchableOpacity onPress={() => router.push('/home')}>
+          <Feather name="home" size={24} color="black" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
+          <Feather name="list" size={24} color="black" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push('/profileSeller')}>
+          <Feather name="user" size={24} color="black" />
+        </TouchableOpacity>
       </View>
 
       {/* Modal que representa el sidebar */}

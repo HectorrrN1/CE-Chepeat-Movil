@@ -61,18 +61,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </View>
 
         <View style={styles.menuItems}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/profileSeller'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText}>Mi cuenta</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+
+          {/*<TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/politics'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="file-text" size={24} color="black" />
             <Text style={styles.menuItemText}>Términos y condiciones</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          </TouchableOpacity>*/}
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/sellerProducts'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="package" size={24} color="black" />
             <Text style={styles.menuItemText}>Mis productos</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/explore'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="shopping-bag" size={24} color="black" />
+            <Text style={styles.menuItemText}>Modo comprador</Text>
+          </TouchableOpacity>
+
         </View>
       </View>
 
@@ -111,7 +139,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#df1c24',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
