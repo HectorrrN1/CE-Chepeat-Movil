@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, KeyboardAvoidingView, Platform, TextInput, StyleSheet, Image, Text, ScrollView, Alert, ActivityIndicator, Dimensions, FlatList } from 'react-native';
-import MapView from 'react-native-maps';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  SafeAreaView, View, KeyboardAvoidingView,
+  Platform, TextInput, StyleSheet, Image, Text,
+  ScrollView, Alert, ActivityIndicator, Dimensions,
+  FlatList, Animated, TouchableOpacity, Modal
+} from 'react-native';
+import MapView, { Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import Carousel from 'react-native-snap-carousel';
+import MenuBuyer from '@/components/navigation/menuBuyer';
 
 const { width: viewportWidth } = Dimensions.get('window');
 
@@ -24,10 +30,20 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 
 export default function homeBuyer() {
   const router = useRouter();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Función para alternar el estado del sidebar
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const carouselItems = [
     { id: 1, title: 'Un 50% de descuento', image: require('../../assets/images/concha.png'), description: '¡Todos los productos de panadería después de las 9 PM todos los días!' },
@@ -35,12 +51,12 @@ export default function homeBuyer() {
   ];
 
   const productItems = [
-    { id: 1, name: 'Tacos', price: '$25', amount: '3 piezas', image: require('../../assets/images/tacosd.png') },
-    { id: 2, name: 'Torta', price: '$20', amount: '1 pieza', image: require('../../assets/images/torta.png') },
-    { id: 3, name: 'Postre', price: '$15', amount: '1 pieza', image: require('../../assets/images/postre.png') },
-    { id: 4, name: 'Pizza grande', price: '$20', amount: '/100g', image: require('../../assets/images/pizza.png') },
-    { id: 5, name: 'Burrito', price: '$10', amount: '1 pieza', image: require('../../assets/images/burrito.png') },
-    { id: 6, name: 'Ensalada', price: '$25', amount: '1 pieza', image: require('../../assets/images/ensalada.png') },
+    { id: 1, name: 'Tacos', price: '25', amount: '3 piezas', image: require('../../assets/images/tacosd.png') },
+    { id: 2, name: 'Torta', price: '20', amount: '1 pieza', image: require('../../assets/images/torta.png') },
+    { id: 3, name: 'Postre', price: '15', amount: '1 pieza', image: require('../../assets/images/postre.png') },
+    { id: 4, name: 'Pizza grande', price: '20', amount: '/100g', image: require('../../assets/images/pizza.png') },
+    { id: 5, name: 'Burrito', price: '10', amount: '1 pieza', image: require('../../assets/images/burrito.png') },
+    { id: 6, name: 'Ensalada', price: '25', amount: '1 pieza', image: require('../../assets/images/ensalada.png') },
   ];
 
   useEffect(() => {
@@ -57,6 +73,7 @@ export default function homeBuyer() {
       setIsLoading(false);
     })();
   }, []);
+  
 
   const renderItem = ({ item }: { item: { title: string; image: any, description: string } }) => {
     return (
@@ -70,21 +87,58 @@ export default function homeBuyer() {
     );
   };
 
-  const renderProductItem = ({ item }: { item: { name: string; price: string; amount: string; image: any } }) => {
+  const renderProductItem = ({ item }: { item: { id: number; name: string; price: string; amount: string; image: any } }) => {
+    const handleViewMore = () => {
+      router.push({
+        pathname: '/productDetails',
+        params: {
+          name: item.name,
+          price: item.price,
+          amount: item.amount,
+          image: item.image,
+        },
+      });
+    };
+  
     return (
       <View style={styles.productCard}>
         <Image source={item.image} style={styles.productImage} />
         <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productPrice}>{item.price}</Text>
+        <Text style={styles.productPrice}>${item.price}</Text>
         <Text style={styles.productAmount}>{item.amount}</Text>
-        <Text style={styles.productButton}>Ver más</Text>
+        <TouchableOpacity onPress={handleViewMore}>
+          <Text style={styles.productButton}>Ver más</Text>
+        </TouchableOpacity>
       </View>
     );
   };
+  
 
   if (errorMsg) {
     Alert.alert('Error', errorMsg);
-  }
+  };
+
+  const closeMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: -300,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start(() => {
+      setMenuVisible(false);
+      setOverlayVisible(false);
+    });
+  };
+
+  // Función para mostrar el sidebar y el overlay
+  const openMenu = () => {
+    setOverlayVisible(true);
+    setMenuVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,10 +147,26 @@ export default function homeBuyer() {
         style={styles.keyboardAvoidingView}
       >
         <View style={styles.headerContainer}>
-          <Feather name="menu" size={24} color="black" onPress={() => console.log('Menu clicked')} />
+          <TouchableOpacity onPress={openMenu}>
+            <Feather name="menu" size={24} color="black" />
+          </TouchableOpacity>
           <Text style={styles.headerText}>Chepeat</Text>
           <Icon name="tune" type="material" color="black" onPress={() => console.log('Filter clicked')} />
         </View>
+        <Modal
+          transparent={true}
+          visible={menuVisible}
+          animationType="none"
+          onRequestClose={closeMenu}
+        >
+          {overlayVisible && (
+            <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
+          )}
+          <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
+            {/* Llama el contenido del sidebar desde otro componente */}
+            <MenuBuyer isOpen={menuVisible} onToggle={closeMenu} />
+          </Animated.View>
+        </Modal>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.searchContainer}>
             <StyledInput
@@ -119,6 +189,16 @@ export default function homeBuyer() {
                     longitudeDelta: 0.0421,
                   }}
                 >
+                  {/* Agrega el círculo aquí */}
+                  <Circle
+                    center={{
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                    }}
+                    radius={300} // Radio en metros
+                    strokeColor="rgba(255, 0, 0, 0.5)" // Color del borde
+                    fillColor="rgba(255, 0, 0, 0.2)" // Color de relleno
+                  />
                 </MapView>
               )
             )}
@@ -151,7 +231,6 @@ export default function homeBuyer() {
         <View style={styles.bottomBar}>
           <FontAwesome name="home" size={24} color="black" />
           <FontAwesome name="th-large" size={24} color="gray" />
-          <FontAwesome name="heart" size={24} color="gray" />
           <FontAwesome name="shopping-basket" size={24} color="gray" />
         </View>
       </KeyboardAvoidingView>
@@ -273,7 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   productImage: {
-    width: '100%', 
+    width: '100%',
     height: 120,
     borderRadius: 10,
     marginBottom: 10,
@@ -306,6 +385,29 @@ const styles = StyleSheet.create({
     height: 60,
     borderTopWidth: 1,
     borderTopColor: '#e5e5e5',
-  }
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  sidebarContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 300,
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5,
+  },
 });
-

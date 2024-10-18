@@ -13,6 +13,9 @@ export default function TabLayout() {
       <Stack.Screen name="homeBuyer"/>
       <Stack.Screen name='home'/>
       <Stack.Screen name='sellerProducts'/>
+      <Stack.Screen name='productDetails'/>
+      <Stack.Screen name='profileBuyer'/>
+      
     </Stack>
   );
 }
