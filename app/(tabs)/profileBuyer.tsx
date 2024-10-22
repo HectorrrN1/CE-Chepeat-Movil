@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   return (
@@ -16,18 +17,17 @@ export default function ProfileScreen() {
       <View style={styles.optionsContainer}>
         <TouchableOpacity style={styles.optionItem}>
           <Text style={styles.optionText}>Mi información</Text>
+          <Ionicons name="chevron-forward" size={24} color="black" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.optionItem}>
           <Text style={styles.optionText}>Política y privacidad</Text>
+          <Ionicons name="chevron-forward" size={24} color="black" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.optionItem}>
           <Text style={styles.optionText}>Editar perfil</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.optionItem}>
-          <Text style={styles.optionText}>PLAN DE ACTUALIZACIÓN</Text>
+          <Ionicons name="chevron-forward" size={24} color="black" />
         </TouchableOpacity>
       </View>
     </ScrollView>
