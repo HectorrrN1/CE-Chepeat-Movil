@@ -15,7 +15,7 @@ const confirmBuy = () => {
     <View style={styles.container}>
       {/* Icono de la confirmación */}
       <Image 
-        source={require('../../assets/images/icon-aproved.png')} // Ruta de la imagen del icono de aprobación
+        source={require('../../assets/images/logo.png')} // Ruta de la imagen del icono de aprobación
         style={styles.icon}
       />
 

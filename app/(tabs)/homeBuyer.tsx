@@ -70,17 +70,17 @@ export default function homeBuyer() {
   };
 
   const carouselItems = [
-    { id: 1, title: 'Un 50% de descuento', image: require('../../assets/images/concha.png'), description: '¡Todos los productos de panadería después de las 9 PM todos los días!' },
-    { id: 2, title: '30% de descuento', image: require('../../assets/images/tacosd.png'), description: 'En toda la comida' },
+    { id: 1, title: 'Un 50% de descuento', image: require('../../assets/images/concha.jpg'), description: '¡Todos los productos de panadería después de las 9 PM todos los días!' },
+    { id: 2, title: '30% de descuento', image: require('../../assets/images/tacosd.jpg'), description: 'En toda la comida' },
   ];
 
   const productItems = [
-    { id: 1, name: 'Tacos', price: '25', amount: '3 piezas', image: require('../../assets/images/tacosd.png') },
-    { id: 2, name: 'Torta', price: '20', amount: '1 pieza', image: require('../../assets/images/torta.png') },
-    { id: 3, name: 'Postre', price: '15', amount: '1 pieza', image: require('../../assets/images/postre.png') },
-    { id: 4, name: 'Pizza grande', price: '20', amount: '/100g', image: require('../../assets/images/pizza.png') },
-    { id: 5, name: 'Burrito', price: '10', amount: '1 pieza', image: require('../../assets/images/burrito.png') },
-    { id: 6, name: 'Ensalada', price: '25', amount: '1 pieza', image: require('../../assets/images/ensalada.png') },
+    { id: 1, name: 'Tacos', price: '25', amount: '3 piezas', image: require('../../assets/images/tacosd.jpg') },
+    { id: 2, name: 'Torta', price: '20', amount: '1 pieza', image: require('../../assets/images/torta.jpg') },
+    { id: 3, name: 'Postre', price: '15', amount: '1 pieza', image: require('../../assets/images/postre.jpg') },
+    { id: 4, name: 'Pizza grande', price: '20', amount: '/100g', image: require('../../assets/images/pizza.jpg') },
+    { id: 5, name: 'Burrito', price: '10', amount: '1 pieza', image: require('../../assets/images/burrito.jpg') },
+    { id: 6, name: 'Ensalada', price: '25', amount: '1 pieza', image: require('../../assets/images/ensalada.jpg') },
   ];
 
   useEffect(() => {
