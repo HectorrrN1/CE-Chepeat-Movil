@@ -11,6 +11,10 @@ export default function TabLayout() {
       <Stack.Screen name="index"/>
       <Stack.Screen name="register"/>
       <Stack.Screen name="home"/>
+      <Stack.Screen name="homeBuyer"/>
+      <Stack.Screen name="productDetails"/>
+      <Stack.Screen name="confirmBuy"/>
+      <Stack.Screen name="profileBuyer"/>
       <Stack.Screen name="sellerProducts"/>
       <Stack.Screen name="profileSeller"/>
       <Stack.Screen name="addProductSeller"/>

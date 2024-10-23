@@ -65,7 +65,7 @@ export default function ProfileScreen() {
             title="Modo comprador" 
             onPress={() => {
               console.log('Navigating to Modo comprador');
-              router.push('/explore'); 
+              router.push('/homeBuyer'); 
             }} 
           />
           <MenuItem 
