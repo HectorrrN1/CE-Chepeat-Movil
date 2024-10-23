@@ -7,10 +7,11 @@ import {
 } from 'react-native';
 import MapView, { Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import Carousel from 'react-native-snap-carousel';
+import HeaderComponent from '@/components/navigation/headerComponent';
+import BottomBarComponent from '@/components/navigation/bottomComponent';
 import MenuBuyer from '@/components/navigation/menuBuyer';
 
 const { width: viewportWidth } = Dimensions.get('window');
@@ -38,11 +39,34 @@ export default function homeBuyer() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  
+  const closeMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: -300,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start(() => {
+      setMenuVisible(false);
+      setOverlayVisible(false);
+    });
+  };
+
+  // Función para mostrar el sidebar y el overlay
+  const openMenu = () => {
+    setOverlayVisible(true);
+    setMenuVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300, // Duración de la animación
+      useNativeDriver: true,
+    }).start();
+  };
 
   // Función para alternar el estado del sidebar
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    setIsMenuOpen(!isMenuOpen);
   };
 
   const carouselItems = [
@@ -73,7 +97,7 @@ export default function homeBuyer() {
       setIsLoading(false);
     })();
   }, []);
-  
+
 
   const renderItem = ({ item }: { item: { title: string; image: any, description: string } }) => {
     return (
@@ -99,9 +123,9 @@ export default function homeBuyer() {
         },
       });
     };
-  
+
     return (
-      <View style={styles.productCard}>
+      <TouchableOpacity onPress={handleViewMore} style={styles.productCard}>
         <Image source={item.image} style={styles.productImage} />
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productPrice}>${item.price}</Text>
@@ -109,35 +133,13 @@ export default function homeBuyer() {
         <TouchableOpacity onPress={handleViewMore}>
           <Text style={styles.productButton}>Ver más</Text>
         </TouchableOpacity>
-      </View>
+        </TouchableOpacity>
     );
   };
-  
+
 
   if (errorMsg) {
     Alert.alert('Error', errorMsg);
-  };
-
-  const closeMenu = () => {
-    Animated.timing(slideAnim, {
-      toValue: -300,
-      duration: 300, // Duración de la animación
-      useNativeDriver: true,
-    }).start(() => {
-      setMenuVisible(false);
-      setOverlayVisible(false);
-    });
-  };
-
-  // Función para mostrar el sidebar y el overlay
-  const openMenu = () => {
-    setOverlayVisible(true);
-    setMenuVisible(true);
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300, // Duración de la animación
-      useNativeDriver: true,
-    }).start();
   };
 
   return (
@@ -146,13 +148,7 @@ export default function homeBuyer() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={openMenu}>
-            <Feather name="menu" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.headerText}>Chepeat</Text>
-          <Icon name="tune" type="material" color="black" onPress={() => console.log('Filter clicked')} />
-        </View>
+        <HeaderComponent onMenuPress={openMenu} onFilterPress={() => router.push('/filterProducts')} />
         <Modal
           transparent={true}
           visible={menuVisible}
@@ -228,11 +224,7 @@ export default function homeBuyer() {
             />
           </View>
         </ScrollView>
-        <View style={styles.bottomBar}>
-          <FontAwesome name="home" size={24} color="black" />
-          <FontAwesome name="th-large" size={24} color="gray" />
-          <FontAwesome name="shopping-basket" size={24} color="gray" />
-        </View>
+        <BottomBarComponent />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';  
+import { View, SafeAreaView, ScrollView, Text, Image, StyleSheet, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import CheckBox from 'expo-checkbox';
+import BottomBarComponent from '@/components/navigation/bottomComponent';
 
 type ImageSource = { uri: string } | null;
 
 const ProductDetails = () => {
   const router = useRouter();
-  const { name, price, amount } = useLocalSearchParams();  
+  const { name, price, amount } = useLocalSearchParams();
   const [isChecked, setChecked] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const { image } = useLocalSearchParams(); 
+  const { image } = useLocalSearchParams();
   const [imageSource, setImageSource] = useState<ImageSource>(null);
 
   useEffect(() => {
@@ -22,22 +23,22 @@ const ProductDetails = () => {
   }, [image]);
 
   const handlePurchase = () => {
-    setModalVisible(true); 
+    setModalVisible(true);
   };
 
   const cancelPurchase = () => {
-    setModalVisible(false); 
+    setModalVisible(false);
   };
 
   const confirmPurchase = () => {
-    setModalVisible(false); 
+    setModalVisible(false);
     router.push('/confirmBuy');
     console.log('Compra confirmada');
   };
 
   const openMap = () => {
     const destinationAddress = "Avenida Universidad Tecnológica, No. 1000, El Carmen, 42830 Hgo.";
-    
+
     // Detectar si es Android o iOS y construir la URL adecuada
     const mapUrl = Platform.select({
       ios: `maps://?daddr=${encodeURIComponent(destinationAddress)}`,  // URL para Apple Maps
@@ -50,79 +51,82 @@ const ProductDetails = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {imageSource ? (
-        <Image source={imageSource} style={styles.productImage} />
-      ) : (
-        <Text style={styles.errorText}>Imagen no disponible</Text>
-      )}
-      
-      <Text style={styles.productName}>{name}</Text>
-      <Text style={styles.productPrice}>${price}</Text>
-      <Text style={styles.productDescription}>{amount} rollos de sushi variados</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {imageSource ? (
+          <Image source={imageSource} style={styles.productImage} />
+        ) : (
+          <Text style={styles.errorText}>Imagen no disponible</Text>
+        )}
 
-      <View style={styles.detailsContainer}>
-        <Text style={styles.detailsText}>Dirección</Text>
-        <Text style={styles.detailsValue}>Avenida Universidad Tecnológica, No. 1000, El Carmen, 42830 Hgo.</Text>
-        <Text style={styles.detailsText}>Hora de entrega</Text>
-        <Text style={styles.detailsValue}>11:30 p.m.</Text>
-      </View>
+        <Text style={styles.productName}>{name}</Text>
+        <Text style={styles.productPrice}>${price}</Text>
+        <Text style={styles.productDescription}>{amount} rollos de sushi variados</Text>
 
-      <View style={styles.checkboxContainer}>
-        <CheckBox
-          value={isChecked}
-          onValueChange={setChecked}
-          color={isChecked ? '#f7b82b' : undefined}
-        />
-        <Text style={styles.checkboxText}>Estoy de acuerdo con las condiciones del producto</Text>
-      </View>
-
-      {/* Botón para iniciar la ruta de viaje */}
-      <TouchableOpacity style={styles.mapButton} onPress={openMap}>
-        <Text style={styles.buttonText}>Iniciar ruta de viaje</Text>
-      </TouchableOpacity>
-
-      {/* Card del vendedor */}
-      <View style={styles.sellerCard}>
-        <Image
-          source={{ uri: 'https://via.placeholder.com/50' }}
-          style={styles.sellerIcon}
-        />
-        <View>
-          <Text style={styles.sellerName}>Diego Armando</Text>
-          <Text style={styles.sellerRating}>⭐ 4.9</Text>
+        <View style={styles.detailsContainer}>
+          <Text style={styles.detailsText}>Dirección</Text>
+          <Text style={styles.detailsValue}>Avenida Universidad Tecnológica, No. 1000, El Carmen, 42830 Hgo.</Text>
+          <Text style={styles.detailsText}>Hora de entrega</Text>
+          <Text style={styles.detailsValue}>11:30 p.m.</Text>
         </View>
-      </View>
 
-      {/* Botón de compra */}
-      <TouchableOpacity style={styles.purchaseButton} onPress={handlePurchase}>
-        <Text style={styles.buttonText}>Comprar</Text>
-      </TouchableOpacity>
+        <View style={styles.checkboxContainer}>
+          <CheckBox
+            value={isChecked}
+            onValueChange={setChecked}
+            color={isChecked ? '#f7b82b' : undefined}
+          />
+          <Text style={styles.checkboxText}>Estoy de acuerdo con las condiciones del producto</Text>
+        </View>
 
-      {/* Modal de confirmación */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={cancelPurchase}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalText}>¿Estás seguro de que deseas realizar la compra?</Text>
-            <Text style={styles.modalPrice}>Total: ${price}</Text>
+        {/* Botón para iniciar la ruta de viaje */}
+        <TouchableOpacity style={styles.mapButton} onPress={openMap}>
+          <Text style={styles.buttonText}>Iniciar ruta de viaje</Text>
+        </TouchableOpacity>
 
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.cancelButton} onPress={cancelPurchase}>
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmButton} onPress={confirmPurchase}>
-                <Text style={styles.buttonText}>Confirmar</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Card del vendedor */}
+        <View style={styles.sellerCard}>
+          <Image
+            source={{ uri: 'https://via.placeholder.com/50' }}
+            style={styles.sellerIcon}
+          />
+          <View>
+            <Text style={styles.sellerName}>Diego Armando</Text>
+            <Text style={styles.sellerRating}>⭐ 4.9</Text>
           </View>
         </View>
-      </Modal>
-    </View>
+
+        {/* Botón de compra */}
+        <TouchableOpacity style={styles.purchaseButton} onPress={handlePurchase}>
+          <Text style={styles.buttonText}>Comprar</Text>
+        </TouchableOpacity>
+
+        {/* Modal de confirmación */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={cancelPurchase}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalText}>¿Estás seguro de que deseas realizar la compra?</Text>
+              <Text style={styles.modalPrice}>Total: ${price}</Text>
+
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity style={styles.cancelButton} onPress={cancelPurchase}>
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.confirmButton} onPress={confirmPurchase}>
+                  <Text style={styles.buttonText}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+      <BottomBarComponent />
+    </SafeAreaView>
   );
 };
 
@@ -133,6 +137,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     marginTop: 35,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   productImage: {
     width: '100%',
