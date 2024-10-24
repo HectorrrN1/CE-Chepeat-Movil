@@ -13,12 +13,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.jpablito.CEChepeatMovil",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
+        }
       }
     },
     "web": {
@@ -31,6 +40,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6b6541c1-32c1-4b65-9e67-febaf13bc3ac"
+      }
     }
   }
 }

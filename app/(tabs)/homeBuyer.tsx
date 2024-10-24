@@ -5,7 +5,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Dimensions,
   FlatList, Animated, TouchableOpacity, Modal
 } from 'react-native';
-import MapView, { Circle } from 'react-native-maps';
+import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
@@ -85,16 +85,28 @@ export default function homeBuyer() {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Permission to access location was denied');
+          setIsLoading(false);
+          return;
+        }
+  
+        let userLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+  
+        setLocation(userLocation.coords);
+      } catch (error) {
+        if (error instanceof Error) {
+          setErrorMsg('Error fetching location: ' + error.message);
+        } else {
+          setErrorMsg('An unknown error occurred');
+        }
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      let userLocation = await Location.getCurrentPositionAsync({});
-      setLocation(userLocation.coords);
-      setIsLoading(false);
     })();
   }, []);
 
@@ -172,11 +184,12 @@ export default function homeBuyer() {
             />
           </View>
           <View style={styles.mapContainer}>
-            {isLoading ? (
+          {isLoading ? (
               <ActivityIndicator size="large" color="#df1c24" />
             ) : (
               location && (
                 <MapView
+                  provider={PROVIDER_GOOGLE}
                   style={styles.map}
                   initialRegion={{
                     latitude: location.latitude,
@@ -185,15 +198,14 @@ export default function homeBuyer() {
                     longitudeDelta: 0.0421,
                   }}
                 >
-                  {/* Agrega el círculo aquí */}
                   <Circle
                     center={{
                       latitude: location.latitude,
                       longitude: location.longitude,
                     }}
-                    radius={300} // Radio en metros
-                    strokeColor="rgba(255, 0, 0, 0.5)" // Color del borde
-                    fillColor="rgba(255, 0, 0, 0.2)" // Color de relleno
+                    radius={300}
+                    strokeColor="rgba(255, 0, 0, 0.5)"
+                    fillColor="rgba(255, 0, 0, 0.2)"
                   />
                 </MapView>
               )
