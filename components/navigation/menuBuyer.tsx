@@ -1,8 +1,7 @@
 import React, { useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons'; // Se agregó MaterialIcons para más íconos
+import { Feather } from '@expo/vector-icons'; // Se usa Feather como ícono
 import { useRouter } from 'expo-router';
-
 
 // Definición de las propiedades del componente
 interface menuBuyerProps {
@@ -63,22 +62,47 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
 
         {/* Ítems del menú */}
         <View style={styles.menuItems}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/filterProducts'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="search" size={24} color="black" />
             <Text style={styles.menuItemText}>Buscar comida</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/profileBuyer'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="user" size={24} color="black" />
-            <Text style={styles.menuItemText} onPress={() => router.push('/profileBuyer')}>Mi cuenta</Text>
+            <Text style={styles.menuItemText}>Mi cuenta</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/home'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="tag" size={24} color="black" />
-            <Text style={styles.menuItemText} onPress={() => router.push('/home')}>Quiero ser vendedor</Text>
+            <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+
+          {/*
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/terminosCondiciones'), 300); // Esperar 300ms antes de redirigir
+            }}>
             <Feather name="file-text" size={24} color="black" />
             <Text style={styles.menuItemText}>Términos y condiciones</Text>
           </TouchableOpacity>
+          */}
         </View>
       </View>
 
@@ -170,7 +194,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-
 
 export default menuBuyer;
