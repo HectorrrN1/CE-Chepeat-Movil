@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '@/components/ui/Button';
-import { MaterialIcons } from '@expo/vector-icons'; // Importar los íconos
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store'; // Importar SecureStore
+import styles from '@/assets/styles/index.styles';
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
@@ -20,62 +23,103 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar la contraseña
-  const [emailError, setEmailError] = useState(''); // Estado para el error del email
-  const [passwordError, setPasswordError] = useState(''); // Estado para el error de la contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState(''); // Nuevo estado para el mensaje del modal
 
   const router = useRouter();
 
-  // Función para validar el correo
   const validateEmail = () => {
     const emailRegex = /.+@.+\..+/;
     if (!emailRegex.test(email)) {
-      setEmailError('Por favor, ingresa un correo válido con @');
+      setEmailError('Ingresa el formato de correo electrónico válido');
       return false;
     }
     setEmailError('');
     return true;
   };
 
-  // Función para validar la contraseña
   const validatePassword = () => {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*.,]{8,}$/;
     if (!passwordRegex.test(password)) {
-      setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo letras, números y puede contener símbolos.');
+      setPasswordError('La contraseña debe tener al menos 8 caracteres, incluyendo letras y números.');
       return false;
     }
     setPasswordError('');
     return true;
   };
 
-  const handleLogin = () => {
-    const isEmailValid = validateEmail();  // Ejecuta la validación del correo
-    const isPasswordValid = validatePassword();  // Ejecuta la validación de la contraseña
-  
-    // Solo si ambas validaciones son correctas, se procede con el inicio de sesión
+  const handleLogin = async () => {
+    setIsModalVisible(false);
+    const isEmailValid = validateEmail();
+    const isPasswordValid = validatePassword();
+
     if (isEmailValid && isPasswordValid) {
-      console.log('Login attempted with:', email, password);
-      // Lógica de login
-      router.push('/homeBuyer');
-    } else {
-      console.log('Validation failed. Email Error:', emailError, 'Password Error:', passwordError);
+      try {
+        const response = await axios.post('https://backend-j959.onrender.com/api/Auth/IniciarSesion', {
+          email,
+          password,
+        });
+
+        console.log('Respuesta del servidor:', response.data);
+
+        if (response.data.numError === 1 && response.data.token) {
+          // Guardamos el token JWT en SecureStore si el login es exitoso
+          const token = response.data.token;
+          await SecureStore.setItemAsync('userToken', token);
+
+          console.log('Inicio de sesión exitoso, token guardado:', token); // Confirmación en consola
+
+          // Navegar a la pantalla principal
+          router.push('/homeBuyer');
+        } else {
+          console.warn('Credenciales no válidas:', response.data); // Mensaje en consola en caso de error
+          setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
+          setIsModalVisible(true);
+        }
+
+      } catch (error) {
+        console.error('Error al realizar la solicitud:', error); // Mensaje detallado del error en consola
+        setModalMessage('Error al intentar iniciar sesión. Por favor, verifica tu conexión o credenciales.');
+        setIsModalVisible(true);
+      }
     }
   };
-  
+
+
+  const fetchUserData = async () => {
+    try {
+      // Obtener el token almacenado
+      const token = await SecureStore.getItemAsync('userToken');
+
+      const response = await axios.get('https://backend-j959.onrender.com/api/User/GetUsers', {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Se agregra el token en la cabecera :)
+        },
+      });
+
+      // Procesar los datos recibidos
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error al obtener los datos del usuario:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
         <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false} // Esto elimina el indicador de scroll vertical
-        bounces={false} // Para evitar el rebote en iOS
-        overScrollMode="never" // Para evitar el efecto overscroll en Android
->
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
           <View style={styles.logoContainer}>
             <Image
               source={require('@/assets/images/logo.png')}
@@ -92,7 +136,7 @@ export default function LoginScreen() {
             placeholder="Correo Electrónico"
             value={email}
             onChangeText={setEmail}
-            onBlur={validateEmail} // Valida al perder foco
+            onBlur={validateEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             style={styles.inputStyle}
@@ -106,7 +150,7 @@ export default function LoginScreen() {
               placeholder="Contraseña"
               value={password}
               onChangeText={setPassword}
-              onBlur={validatePassword} // Valida al perder foco
+              onBlur={validatePassword}
               secureTextEntry={!showPassword}
               style={styles.inputStyle}
             />
@@ -125,13 +169,36 @@ export default function LoginScreen() {
             <Text onPress={() => router.push('/')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
-          {/* Aquí está el divisor con "Oh" */}
+          {/* Modal de alerta */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isModalVisible}
+            onRequestClose={() => setIsModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalText}>{modalMessage}</Text>
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setIsModalVisible(false)}
+                  >
+                    <Text style={styles.buttonText}>Cerrar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Divisor con "O" */}
           <View style={styles.dividerContainer}>
             <View style={styles.line} />
             <Text style={styles.dividerText}>O</Text>
             <View style={styles.line} />
           </View>
 
+          {/* Crear Cuenta */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
             <Button
@@ -145,124 +212,3 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    marginBottom: 0,
-    marginTop: 35,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  logo: {
-    width: 250,
-    height: 250,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: -10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 25,
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    backgroundColor: '#FFFFFF',
-    width: '100%',
-    marginBottom: 15,
-  },
-  input: {
-    fontSize: 16,
-    color: '#333',
-  },
-  inputStyle: {
-    width: '100%',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    position: 'relative',
-  },
-  iconContainer: {
-    position: 'absolute',
-    right: 10,
-    zIndex: 1,
-    height: 40,
-    paddingHorizontal: 10, // Espacio alrededor del icono
-  },
-  Button: {
-    width: '100%',
-    marginBottom: 30,
-    backgroundColor: '#df1c24',
-    borderRadius: 25,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  forgotPassword: {
-    color: '#df1c24',
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
-    width: '100%',
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ccc',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#999',
-  },
-  signupContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  signupText: {
-    color: '#7e7e7e',
-    fontSize: 14,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  text: {
-    width: '97%',
-    height: 25,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 10,
-    fontSize: 12,
-  },
-});
