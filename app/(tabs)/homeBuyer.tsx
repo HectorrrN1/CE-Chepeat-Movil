@@ -5,7 +5,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Dimensions,
   FlatList, Animated, TouchableOpacity, Modal
 } from 'react-native';
-import MapView, { Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
@@ -38,10 +38,12 @@ export default function homeBuyer() {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  
+
   const closeMenu = () => {
     Animated.timing(slideAnim, {
       toValue: -300,
@@ -84,31 +86,31 @@ export default function homeBuyer() {
   ];
 
   useEffect(() => {
-    (async () => {
+    const obtenerUbicacionInicial = async () => {
       try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
+        const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
+          alert('Permiso de ubicación denegado');
           setIsLoading(false);
           return;
         }
-  
-        let userLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-  
-        setLocation(userLocation.coords);
+
+        const ubicacion = await Location.getCurrentPositionAsync({});
+        setLatitude(ubicacion.coords.latitude);
+        setLongitude(ubicacion.coords.longitude);
       } catch (error) {
-        if (error instanceof Error) {
-          setErrorMsg('Error fetching location: ' + error.message);
-        } else {
-          setErrorMsg('An unknown error occurred');
-        }
+        console.error('Error al obtener la ubicación:', error);
       } finally {
         setIsLoading(false);
       }
-    })();
-  }, []);
+    };
+
+    if (latitude === null || longitude === null) {
+      obtenerUbicacionInicial();
+    } else {
+      setIsLoading(false);
+    }
+  }, [latitude, longitude]);
 
 
   const renderItem = ({ item }: { item: { title: string; image: any, description: string } }) => {
@@ -145,7 +147,7 @@ export default function homeBuyer() {
         <TouchableOpacity onPress={handleViewMore}>
           <Text style={styles.productButton}>Ver más</Text>
         </TouchableOpacity>
-        </TouchableOpacity>
+      </TouchableOpacity>
     );
   };
 
@@ -184,28 +186,33 @@ export default function homeBuyer() {
             />
           </View>
           <View style={styles.mapContainer}>
-          {isLoading ? (
-              <ActivityIndicator size="large" color="#df1c24" />
+            {isLoading ? (
+              <ActivityIndicator size="large" color="#ff6e33" style={{ marginVertical: 20 }} />
             ) : (
-              location && (
+              latitude !== null && longitude !== null && (
                 <MapView
-                  provider={PROVIDER_GOOGLE}
+                provider={PROVIDER_GOOGLE}
                   style={styles.map}
-                  initialRegion={{
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
+                  region={{
+                    latitude: latitude,
+                    longitude: longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  onPress={(e) => {
+                    const { latitude, longitude } = e.nativeEvent.coordinate;
+                    setLatitude(latitude);
+                    setLongitude(longitude);
                   }}
                 >
-                  <Circle
-                    center={{
-                      latitude: location.latitude,
-                      longitude: location.longitude,
+                  <Marker
+                    coordinate={{ latitude, longitude }}
+                    draggable
+                    onDragEnd={(e) => {
+                      const { latitude, longitude } = e.nativeEvent.coordinate;
+                      setLatitude(latitude);
+                      setLongitude(longitude);
                     }}
-                    radius={300}
-                    strokeColor="rgba(255, 0, 0, 0.5)"
-                    fillColor="rgba(255, 0, 0, 0.2)"
                   />
                 </MapView>
               )

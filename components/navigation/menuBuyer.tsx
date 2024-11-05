@@ -110,10 +110,6 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
               {isSeller ? 'Modo Cliente' : 'Quiero ser Vendedor'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Feather name="file-text" size={24} color="black" />
-            <Text style={styles.menuItemText}>Términos y condiciones</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
