@@ -1,8 +1,9 @@
-import React, { useState, useRef, FC } from 'react';
+import React, { useState, useRef, FC, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Modal, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Sidebar from '@/components/navigation/sidebar';
+import * as SecureStore from 'expo-secure-store';
 
 // Define la interfaz para los props del componente
 interface ProductItemProps {
@@ -55,6 +56,27 @@ export default function VendorProductList() {
       useNativeDriver: true,
     }).start();
   };
+
+  // Función para obtener datos del SecureStore
+  const fetchUserData = async () => {
+    try {
+      const userDataString = await SecureStore.getItemAsync('userData');
+      const userData = userDataString ? JSON.parse(userDataString) : null;
+
+      if (userData) {
+        console.log('Datos del usuario:', userData); // Mostrar datos en la consola
+      } else {
+        console.warn('No se encontraron datos de usuario en SecureStore');
+      }
+    } catch (error) {
+      console.error('Error al obtener los datos del usuario:', error);
+    }
+  };
+
+  // Usar useEffect para recuperar los datos al montar el componente
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -115,7 +137,7 @@ export default function VendorProductList() {
         <TouchableOpacity onPress={() => router.push('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
-      </View>
+      </View> 
 
       {/* Modal para el sidebar */}
       <Modal

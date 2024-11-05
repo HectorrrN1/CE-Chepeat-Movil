@@ -1,9 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
-import { Feather } from '@expo/vector-icons'; // Se usa Feather como ícono
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
-// Definición de las propiedades del componente
 interface menuBuyerProps {
   isOpen: boolean;
   onToggle: () => void;
@@ -12,33 +12,48 @@ interface menuBuyerProps {
 const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const [isSeller, setIsSeller] = useState(false);
 
-  // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
   });
 
-  // Función para manejar el cambio de estado del sidebar
   const handleToggle = () => {
     Animated.timing(rotationAnim, {
       toValue: isOpen ? 0 : 1,
       duration: 300,
       useNativeDriver: false,
     }).start();
-    onToggle(); // Mantener la animación al tocar fuera del botón de cerrar sesión
+    onToggle();
   };
 
-  // Función para cerrar sesión con un pequeño retraso
   const handleLogout = () => {
-    // Primero cierra el sidebar
     handleToggle();
-
-    // Luego agrega un delay antes de redirigir a la pantalla de logout
     setTimeout(() => {
-      router.push('/'); // Navegar a la pantalla de logout después del delay
-    }, 300); // 300ms de delay para esperar el cierre del sidebar
+      router.push('/');
+    }, 300);
   };
+
+  const fetchUserData = async () => {
+    try {
+      const userDataString = await SecureStore.getItemAsync('userData');
+      const userData = userDataString ? JSON.parse(userDataString) : null;
+
+      if (userData && userData.user) {
+        console.log('Datos del usuario:', userData);
+        setIsSeller(userData.user.isSeller || false); // Acceder correctamente a isSeller dentro de user
+      } else {
+        console.warn('No se encontraron datos de usuario en SecureStore');
+      }
+    } catch (error) {
+      console.error('Error al obtener los datos del usuario:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,8 +64,7 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           </Animated.View>
         </TouchableOpacity>
       </View>
-      
-      {/* Contenido del perfil y menú */}
+
       <View style={styles.contentContainer}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
@@ -60,13 +74,12 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           <Text style={styles.username}>Usuario</Text>
         </View>
 
-        {/* Ítems del menú */}
         <View style={styles.menuItems}>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {
-              handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/filterProducts'), 300); // Esperar 300ms antes de redirigir
+              handleToggle();
+              setTimeout(() => router.push('/filterProducts'), 300);
             }}>
             <Feather name="search" size={24} color="black" />
             <Text style={styles.menuItemText}>Buscar comida</Text>
@@ -75,8 +88,8 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {
-              handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/profileBuyer'), 300); // Esperar 300ms antes de redirigir
+              handleToggle();
+              setTimeout(() => router.push('/profileBuyer'), 300);
             }}>
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText}>Mi cuenta</Text>
@@ -85,32 +98,26 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {
-              handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/home'), 300); // Esperar 300ms antes de redirigir
-            }}>
+              handleToggle();
+              setTimeout(() => {
+                if (isSeller) {
+                  router.push('/home'); // Si es vendedor, ir a /home
+                } else {
+                  router.push('/registerSeller'); // Si no es vendedor, ir a /registerSeller
+                }
+              }, 300);
+            }}
+          >
             <Feather name="tag" size={24} color="black" />
             <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
           </TouchableOpacity>
-
-          {/*
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/terminosCondiciones'), 300); // Esperar 300ms antes de redirigir
-            }}>
-            <Feather name="file-text" size={24} color="black" />
-            <Text style={styles.menuItemText}>Términos y condiciones</Text>
-          </TouchableOpacity>
-          */}
         </View>
       </View>
 
-      {/* Botón para Cerrar Sesión */}
       <View style={styles.logoutContainer}>
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={handleLogout} // Usar la nueva función con delay
+          onPress={handleLogout}
         >
           <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
         </TouchableOpacity>
@@ -123,7 +130,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: 20, // Espacio lateral para todo el contenedor
+    paddingHorizontal: 20,
   },
   header: {
     alignItems: 'flex-end',
@@ -166,10 +173,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 10, // Espacio dentro del elemento
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
-    marginHorizontal: 10, // Añadir espacio lateral fuera del elemento
+    marginHorizontal: 10,
   },
   menuItemText: {
     marginLeft: 15,
@@ -177,8 +184,8 @@ const styles = StyleSheet.create({
     color: 'black',
   },
   logoutContainer: {
-    paddingBottom: 20, 
-    paddingHorizontal: 20, // Añadir espacio lateral al botón de "Cerrar sesión"
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   logoutButton: {
     borderWidth: 1,

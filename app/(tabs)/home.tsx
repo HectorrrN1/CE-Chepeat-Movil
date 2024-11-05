@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, Modal, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-// Importa el contenido del sidebar desde otro archivo
 import Sidebar from '@/components/navigation/sidebar';
 import { useRouter } from 'expo-router';
-
+import * as SecureStore from 'expo-secure-store'; // Importar SecureStore
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ProductItemProps = {
   name: string;
@@ -55,6 +55,9 @@ export default function ProductManagement() {
 
   const router = useRouter();
 
+  const [storeData, setStoreData] = useState(null); // Estado para almacenar los datos de la tienda
+
+
   // Función para ocultar el sidebar con animación 'timing'
   const closeSidebar = () => {
     Animated.timing(slideAnim, {
@@ -78,6 +81,28 @@ export default function ProductManagement() {
     }).start();
   };
 
+  // useEffect para recuperar los datos guardados
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem('datosVendedor');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData); // Parsea los datos guardados
+        setStoreData(parsedData); // Almacena los datos en el estado
+        console.log('Datos del vendedor recuperados:', parsedData);
+        
+        // Visualiza el estado actualizado
+        console.log('Estado actualizado:', storeData);
+      }
+    } catch (error) {
+      console.error('Error al recuperar datos del vendedor:', error);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -88,19 +113,6 @@ export default function ProductManagement() {
       </View>
 
       <ScrollView style={styles.content}>
-
-        {/*<TouchableOpacity onPress={() => router.push(`/productDetail?name=${name}`)}>
-          <View style={styles.productItemContainer}>
-            <View style={styles.productItem}>
-              <Image source={image} style={styles.productImage} />
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{name}</Text>
-                <Text style={styles.productPrice}>${price}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-        */}
         <Text style={styles.sectionTitle}>Mis Productos</Text>
         <View style={styles.productContainer}>
           <TouchableOpacity
@@ -126,7 +138,7 @@ export default function ProductManagement() {
         </View>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push('/addProductSeller')} // Usa el nombre de la pantalla
+          onPress={() => router.push('/addProductSeller')}
         >
           <Text style={styles.addButtonText}>Agregar Producto</Text>
         </TouchableOpacity>
@@ -177,7 +189,7 @@ export default function ProductManagement() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal que representa el sidebar */}
+      {/* Modal para el sidebar */}
       <Modal
         transparent={true}
         visible={sidebarVisible}
@@ -188,10 +200,10 @@ export default function ProductManagement() {
           <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />
         )}
         <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
-          {/* Llama el contenido del sidebar desde otro componente */}
           <Sidebar isOpen={sidebarVisible} onToggle={closeSidebar} />
         </Animated.View>
       </Modal>
+
     </SafeAreaView>
   );
 }

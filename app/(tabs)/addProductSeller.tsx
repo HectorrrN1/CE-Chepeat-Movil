@@ -1,34 +1,103 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Image, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 export default function AddProductScreen() {
     const [price, setPrice] = useState('');
-    const [deliveryTime, setDeliveryTime] = useState('');
+    const [deliveryDateTime, setDeliveryDateTime] = useState(new Date());
+    const [showDateTimePicker, setShowDateTimePicker] = useState(false);
     const [description, setDescription] = useState('');
     const [image, setImage] = useState<string | null>(null);
+    const [idSeller, setIdSeller] = useState<string | null>(null);
+    const [name, setName] = useState('');
+    const [stock, setStock] = useState('');
+    const [measure, setMeasure] = useState('litros');
 
-    const handleSave = () => {
-        console.log('Guardando producto:', { price, deliveryTime, description, image });
+    // Función para obtener datos del SecureStore y extraer el idSeller
+    const fetchUserData = async () => {
+        try {
+            const userDataString = await SecureStore.getItemAsync('userData');
+            const userData = userDataString ? JSON.parse(userDataString) : null;
+
+            if (userData) {
+                console.log('Datos del usuario:', userData); // Mostrar datos en la consola
+                const sellerId = userData.idSeller; // Suponiendo que el idSeller está en los datos del usuario
+                if (sellerId) {
+                    setIdSeller(sellerId);
+                } else {
+                    Alert.alert('Error', 'No se encontró el idSeller en los datos del usuario');
+                }
+            } else {
+                console.warn('No se encontraron datos de usuario en SecureStore');
+                Alert.alert('Error', 'No se encontraron datos de usuario');
+            }
+        } catch (error) {
+            console.error('Error al obtener los datos del usuario:', error);
+            Alert.alert('Error', 'Hubo un problema al obtener los datos del usuario');
+        }
     };
 
-    const openImagePicker = async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    // Usar useEffect para recuperar los datos al montar el componente
+    useEffect(() => {
+        fetchUserData();
+    }, []); 
 
-        if (permissionResult.granted === false) {
-            alert('Se necesitan permisos para acceder a la galería');
+    const handleSave = async () => {
+        if (!name || !price || !deliveryDateTime || !description || !stock || !measure || !idSeller) {
+            Alert.alert('Error', 'Por favor completa todos los campos');
             return;
         }
 
+        try {
+            const response = await axios.post('https://backend-j959.onrender.com/api/Product/AddProduct', {
+                name,
+                description,
+                price: parseFloat(price),
+                stock: parseInt(stock),
+                measure,
+                deliveryTime: deliveryDateTime.toISOString(), // Enviar fecha y hora en formato ISO
+                idSeller: idSeller,
+            });
+            Alert.alert('Éxito', 'Producto guardado con éxito');
+        } catch (error) {
+            Alert.alert('Error', 'Hubo un problema al guardar el producto');
+            console.error(error);
+        }
+    };
+
+    const openImagePicker = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permissionResult.granted) {
+            alert('Se necesitan permisos para acceder a la galería y la cámara');
+            return;
+        }
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.All,
             allowsEditing: true,
             aspect: [4, 3],
             quality: 1,
         });
-
         if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        }
+    };
+
+    const openCamera = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permissionResult.granted) {
+            alert('Se necesitan permisos para acceder a la cámara');
+            return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
             setImage(result.assets[0].uri);
         }
     };
@@ -41,11 +110,28 @@ export default function AddProductScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.imageUpload}>
                     <Text style={styles.label}>Imagen del producto</Text>
-                    <TouchableOpacity style={styles.uploadButton} onPress={openImagePicker}>
-                        <Feather name="upload" size={24} color="white" />
-                        <Text style={styles.uploadButtonText}>Subir Imagen</Text>
-                    </TouchableOpacity>
+                    <View style={styles.imageButtonsContainer}>
+                        <TouchableOpacity style={styles.uploadButton} onPress={openImagePicker}>
+                            <Feather name="image" size={24} color="white" />
+                            <Text style={styles.uploadButtonText}>Galería</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.uploadButton} onPress={openCamera}>
+                            <Feather name="camera" size={24} color="white" />
+                            <Text style={styles.uploadButtonText}>Cámara</Text>
+                        </TouchableOpacity>
+                    </View>
                     {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Nombre del producto</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Ingrese el nombre del producto"
+                        placeholderTextColor="#999"
+                    />
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -61,17 +147,6 @@ export default function AddProductScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Hora de entrega</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={deliveryTime}
-                        onChangeText={setDeliveryTime}
-                        placeholder="Ingrese la hora de entrega"
-                        placeholderTextColor="#999"
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
                     <Text style={styles.label}>Descripción</Text>
                     <TextInput
                         style={[styles.input, styles.textArea]}
@@ -82,6 +157,31 @@ export default function AddProductScreen() {
                         multiline
                         numberOfLines={4}
                     />
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Stock</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={stock}
+                        onChangeText={text => setStock(text.replace(/[^0-9]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder="Ingrese el stock"
+                        placeholderTextColor="#999"
+                    />
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Medida</Text>
+                    <Picker
+                        selectedValue={measure}
+                        style={styles.picker}
+                        onValueChange={(itemValue) => setMeasure(itemValue)}
+                    >
+                        <Picker.Item label="Litros" value="Litros" />
+                        <Picker.Item label="Kilos" value="kilos" />
+                        <Picker.Item label="Piezas" value="piezas" />
+                    </Picker>
                 </View>
             </ScrollView>
 
@@ -116,6 +216,10 @@ const styles = StyleSheet.create({
     imageUpload: {
         marginBottom: 20,
     },
+    imageButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
     label: {
         fontSize: 16,
         color: '#000000',
@@ -129,42 +233,47 @@ const styles = StyleSheet.create({
         backgroundColor: '#9c9898',
         padding: 15,
         borderRadius: 8,
+        marginRight: 5,
     },
     uploadButtonText: {
         color: 'white',
-        marginLeft: 10,
-        fontSize: 16,
+        marginLeft: 5,
     },
     imagePreview: {
-        marginTop: 10,
         width: '100%',
         height: 200,
-        borderRadius: 8,
+        marginTop: 10,
+        borderRadius: 10,
     },
     inputGroup: {
         marginBottom: 20,
     },
     input: {
-        backgroundColor: '#EEEEEE',
-        color: '#000000',
-        padding: 12,
+        borderWidth: 1,
+        borderColor: '#CCCCCC',
         borderRadius: 8,
-        fontSize: 16,
+        padding: 10,
+        backgroundColor: '#F9F9F9',
     },
     textArea: {
         height: 100,
         textAlignVertical: 'top',
     },
+    picker: {
+        borderWidth: 1,
+        borderColor: '#CCCCCC',
+        borderRadius: 8,
+        backgroundColor: '#F9F9F9',
+    },
     saveButton: {
-        backgroundColor: '#df1c24',
+        backgroundColor: '#4CAF50',
         padding: 15,
-        borderRadius: 25,
-        alignItems: 'center',
-        margin: 20,
+        borderRadius: 8,
+        margin: 16,
     },
     saveButtonText: {
-        color: 'white',
+        color: '#FFFFFF',
+        textAlign: 'center',
         fontSize: 18,
-        fontWeight: 'bold',
     },
 });

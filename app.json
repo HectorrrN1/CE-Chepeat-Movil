@@ -4,7 +4,7 @@
     "slug": "CE-Chepeat-Movil",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -43,7 +43,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "6b6541c1-32c1-4b65-9e67-febaf13bc3ac"
+        "projectId": "4e6a0007-3537-421b-8b62-5fcfb051910b"
       }
     }
   }

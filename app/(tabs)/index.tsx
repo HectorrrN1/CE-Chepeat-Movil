@@ -1,3 +1,4 @@
+// Importar React y SecureStore
 import React, { useState } from 'react';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -5,14 +6,14 @@ import { Button } from '@/components/ui/Button';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store'; // Importar SecureStore
+import * as SecureStore from 'expo-secure-store';
 import styles from '@/assets/styles/index.styles';
 
-const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
+const StyledInput = ({ ...props }) => {
   return (
     <View style={styles.inputContainer}>
       <TextInput
-        style={[styles.input, style]}
+        style={[styles.input]}
         placeholderTextColor="#999"
         {...props}
       />
@@ -27,7 +28,7 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState(''); // Nuevo estado para el mensaje del modal
+  const [modalMessage, setModalMessage] = useState('');
 
   const router = useRouter();
 
@@ -63,45 +64,40 @@ export default function LoginScreen() {
           password,
         });
 
-        console.log('Respuesta del servidor:', response.data);
-
         if (response.data.numError === 1 && response.data.token) {
-          // Guardamos el token JWT en SecureStore si el login es exitoso
-          const token = response.data.token;
-          await SecureStore.setItemAsync('userToken', token);
+          const userData = {
+            token: response.data.token,
+            refreshToken: response.data.refreshToken,
+            user: response.data.user
+          };
 
-          console.log('Inicio de sesión exitoso, token guardado:', token); // Confirmación en consola
+          await SecureStore.setItemAsync('userData', JSON.stringify(userData));
+          await fetchUserData(); // Llama a fetchUserData después de guardar los datos
 
-          // Navegar a la pantalla principal
           router.push('/homeBuyer');
         } else {
-          console.warn('Credenciales no válidas:', response.data); // Mensaje en consola en caso de error
           setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
           setIsModalVisible(true);
         }
 
       } catch (error) {
-        console.error('Error al realizar la solicitud:', error); // Mensaje detallado del error en consola
         setModalMessage('Error al intentar iniciar sesión. Por favor, verifica tu conexión o credenciales.');
         setIsModalVisible(true);
       }
     }
   };
 
-
   const fetchUserData = async () => {
     try {
-      // Obtener el token almacenado
-      const token = await SecureStore.getItemAsync('userToken');
+      const userDataString = await SecureStore.getItemAsync('userData');
+      const userData = userDataString ? JSON.parse(userDataString) : null;
 
-      const response = await axios.get('https://backend-j959.onrender.com/api/User/GetUsers', {
-        headers: {
-          'Authorization': `Bearer ${token}`, // Se agregra el token en la cabecera :)
-        },
-      });
-
-      // Procesar los datos recibidos
-      console.log(response.data);
+      if (userData) {
+        console.log('Datos del usuario:', userData);
+        // Aquí puedes usar userData para realizar acciones adicionales
+      } else {
+        console.warn('No se encontraron datos de usuario en SecureStore');
+      }
     } catch (error) {
       console.error('Error al obtener los datos del usuario:', error);
     }
@@ -114,50 +110,21 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          overScrollMode="never"
-        >
+        <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require('@/assets/images/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>Bienvenido a Chepeat</Text>
           </View>
           <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
 
-          {/* Correo Electrónico */}
           <Text style={styles.text}>Correo Electrónico</Text>
-          <StyledInput
-            placeholder="Correo Electrónico"
-            value={email}
-            onChangeText={setEmail}
-            onBlur={validateEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.inputStyle}
-          />
+          <StyledInput placeholder="Correo Electrónico" value={email} onChangeText={setEmail} onBlur={validateEmail} keyboardType="email-address" autoCapitalize="none" style={styles.inputStyle} />
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-          {/* Contraseña */}
           <Text style={styles.text}>Contraseña</Text>
           <View style={styles.passwordContainer}>
-            <StyledInput
-              placeholder="Contraseña"
-              value={password}
-              onChangeText={setPassword}
-              onBlur={validatePassword}
-              secureTextEntry={!showPassword}
-              style={styles.inputStyle}
-            />
-            <TouchableOpacity
-              style={styles.iconContainer}
-              onPress={() => setShowPassword(!showPassword)}
-            >
+            <StyledInput placeholder="Contraseña" value={password} onChangeText={setPassword} onBlur={validatePassword} secureTextEntry={!showPassword} style={styles.inputStyle} />
+            <TouchableOpacity style={styles.iconContainer} onPress={() => setShowPassword(!showPassword)}>
               <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
             </TouchableOpacity>
           </View>
@@ -169,21 +136,12 @@ export default function LoginScreen() {
             <Text onPress={() => router.push('/')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
-          {/* Modal de alerta */}
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={isModalVisible}
-            onRequestClose={() => setIsModalVisible(false)}
-          >
+          <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={() => setIsModalVisible(false)}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalText}>{modalMessage}</Text>
                 <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setIsModalVisible(false)}
-                  >
+                  <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>
                     <Text style={styles.buttonText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
@@ -191,21 +149,15 @@ export default function LoginScreen() {
             </View>
           </Modal>
 
-          {/* Divisor con "O" */}
           <View style={styles.dividerContainer}>
             <View style={styles.line} />
             <Text style={styles.dividerText}>O</Text>
             <View style={styles.line} />
           </View>
 
-          {/* Crear Cuenta */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
-            <Button
-              title="Crear Cuenta"
-              onPress={() => router.push('/register')}
-              style={styles.Button}
-            />
+            <Button title="Crear Cuenta" onPress={() => router.push('/register')} style={styles.Button} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
