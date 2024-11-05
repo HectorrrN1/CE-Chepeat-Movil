@@ -82,7 +82,7 @@ export default function Register() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>

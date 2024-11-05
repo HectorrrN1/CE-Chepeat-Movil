@@ -16,7 +16,11 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
-      }
+      },
+      "infoPlist": {
+    "NSLocationWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas.",
+    "NSLocationAlwaysUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas."
+  }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +32,11 @@
         "googleMaps": {
           "apiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
         }
-      }
+      },
+      "permissions": [
+    "ACCESS_FINE_LOCATION",
+    "ACCESS_COARSE_LOCATION"
+  ]
     },
     "web": {
       "bundler": "metro",

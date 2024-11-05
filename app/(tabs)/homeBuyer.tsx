@@ -157,7 +157,7 @@ export default function homeBuyer() {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
         <HeaderComponent onMenuPress={openMenu} onFilterPress={() => router.push('/filterProducts')} />
@@ -301,6 +301,7 @@ const styles = StyleSheet.create({
     height: 300,
     alignItems: 'center',
     marginBottom: 10,
+    borderRadius: 20,
   },
   map: {
     width: '100%',

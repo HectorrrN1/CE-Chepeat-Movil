@@ -1,18 +1,34 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons'; // Se agregó MaterialIcons para más íconos
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
+interface UserData {
+  fullname: string;
+}
 
-// Definición de las propiedades del componente
-interface menuBuyerProps {
+interface MenuBuyerProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
+const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
+  const [isSeller, setIsSeller] = useState(false); // Estado para controlar el rol actual
+  const [firstTimeSeller, setFirstTimeSeller] = useState(true); // Estado para controlar el registro inicial de vendedor
   const router = useRouter();
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      const storedUserData = await SecureStore.getItemAsync('userData');
+      if (storedUserData) {
+        setUserData(JSON.parse(storedUserData));
+      }
+    };
+    loadUserData();
+  }, []);
 
   // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
@@ -27,18 +43,33 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
       duration: 300,
       useNativeDriver: false,
     }).start();
-    onToggle(); // Mantener la animación al tocar fuera del botón de cerrar sesión
+    onToggle();
   };
 
   // Función para cerrar sesión con un pequeño retraso
   const handleLogout = () => {
-    // Primero cierra el sidebar
+    handleToggle();
+    setTimeout(() => {
+      router.push('/');
+    }, 300);
+  };
+
+  // Función para cambiar de rol
+  const handleRoleSwitch = () => {
     handleToggle();
 
-    // Luego agrega un delay antes de redirigir a la pantalla de logout
-    setTimeout(() => {
-      router.push('/'); // Navegar a la pantalla de logout después del delay
-    }, 300); // 300ms de delay para esperar el cierre del sidebar
+    if (!isSeller && firstTimeSeller) {
+      // Primera vez que entra al modo vendedor, redirige a la pantalla de registro de vendedor
+      setFirstTimeSeller(false);
+      setIsSeller(true);
+      router.push('/registerSeller');
+    } else {
+      // Cambia de rol sin registro adicional
+      setIsSeller(!isSeller);
+      setTimeout(() => {
+        router.push(isSeller ? '/homeBuyer' : '/home'); // Navega a la pantalla adecuada
+      }, 300);
+    }
   };
 
   return (
@@ -50,18 +81,20 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           </Animated.View>
         </TouchableOpacity>
       </View>
-      
-      {/* Contenido del perfil y menú */}
+
       <View style={styles.contentContainer}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>U</Text>
+            <Text style={styles.avatarText}>
+            {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+            </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
-          <Text style={styles.username}>Usuario</Text>
+          <Text style={styles.username}>
+          {userData ? userData.fullname : 'Cargando...'}
+          </Text>
         </View>
 
-        {/* Ítems del menú */}
         <View style={styles.menuItems}>
           <TouchableOpacity style={styles.menuItem}>
             <Feather name="search" size={24} color="black" />
@@ -71,9 +104,11 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText} onPress={() => router.push('/profileBuyer')}>Mi cuenta</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleRoleSwitch}>
             <Feather name="tag" size={24} color="black" />
-            <Text style={styles.menuItemText} onPress={() => router.push('/home')}>Quiero ser vendedor</Text>
+            <Text style={styles.menuItemText}>
+              {isSeller ? 'Modo Cliente' : 'Quiero ser Vendedor'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Feather name="file-text" size={24} color="black" />
@@ -82,12 +117,8 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
         </View>
       </View>
 
-      {/* Botón para Cerrar Sesión */}
       <View style={styles.logoutContainer}>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout} // Usar la nueva función con delay
-        >
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
@@ -99,7 +130,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: 20, // Espacio lateral para todo el contenedor
+    paddingHorizontal: 20,
   },
   header: {
     alignItems: 'flex-end',
@@ -142,10 +173,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 10, // Espacio dentro del elemento
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
-    marginHorizontal: 10, // Añadir espacio lateral fuera del elemento
+    marginHorizontal: 10,
   },
   menuItemText: {
     marginLeft: 15,
@@ -153,8 +184,8 @@ const styles = StyleSheet.create({
     color: 'black',
   },
   logoutContainer: {
-    paddingBottom: 20, 
-    paddingHorizontal: 20, // Añadir espacio lateral al botón de "Cerrar sesión"
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   logoutButton: {
     borderWidth: 1,
@@ -171,6 +202,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
-
-export default menuBuyer;
+export default MenuBuyer;

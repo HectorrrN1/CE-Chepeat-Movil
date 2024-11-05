@@ -63,26 +63,28 @@ export default function LoginScreen() {
           password,
         });
 
-        console.log('Respuesta del servidor:', response.data);
+        console.log('Respuesta del servidor: ', response.data);
 
         if (response.data.numError === 1 && response.data.token) {
-          // Guardamos el token JWT en SecureStore si el login es exitoso
+          //Si el login es exitoso, se guarda el JWT Y 
+          // los datos del usuario en SecureStore
           const token = response.data.token;
+          const userData = response.data.user;
+
           await SecureStore.setItemAsync('userToken', token);
+          await SecureStore.setItemAsync('userData', JSON.stringify(userData));
 
-          console.log('Inicio de sesión exitoso, token guardado:', token); // Confirmación en consola
+          console.log('Inicio de sesión exitoso, token y datos del usuario guardados: ', token, userData);
 
-          // Navegar a la pantalla principal
+          //Se redirige a la pantalla principal
           router.push('/homeBuyer');
-        } else {
-          console.warn('Credenciales no válidas:', response.data); // Mensaje en consola en caso de error
+        }else {
           setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
           setIsModalVisible(true);
         }
-
       } catch (error) {
-        console.error('Error al realizar la solicitud:', error); // Mensaje detallado del error en consola
-        setModalMessage('Error al intentar iniciar sesión. Por favor, verifica tu conexión o credenciales.');
+        console.error('Error al realizar la solicitud: ', error);
+        setModalMessage('Error al intentar iniciar sesión, verifica tu conexión o credenciales. ');
         setIsModalVisible(true);
       }
     }
@@ -111,7 +113,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
         <ScrollView
