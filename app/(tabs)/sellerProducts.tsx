@@ -1,44 +1,49 @@
 import React, { useState, useRef, FC, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Modal, Animated, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Sidebar from '@/components/navigation/sidebar';
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 
 // Define la interfaz para los props del componente
 interface ProductItemProps {
   name: string;
-  price: string;
-  status: string;
-  imageUrl: any; // Cambiamos el tipo a 'any' para permitir 'require'
+  description: string;
+  price: number;
+  stock: number;
+  measure: string;
+  imageUrl: string;
 }
 
 // Aplica la interfaz a los props del componente
-const ProductItem: FC<ProductItemProps> = ({ name, price, status, imageUrl }) => (
+const ProductItem: FC<ProductItemProps> = ({ name, description, price, stock, measure, imageUrl }) => (
   <View style={styles.productItem}>
-    <Image source={imageUrl} style={styles.productImage} />
+    <Image source={{ uri: imageUrl }} style={styles.productImage} />
     <View style={styles.productInfo}>
       <Text style={styles.productName}>{name}</Text>
-      <Text style={styles.productPrice}>${price} por lb</Text>
+      <Text style={styles.productDescription}>{description}</Text>
+      <Text style={styles.productPrice}>${price} por {measure}</Text>
+      <Text style={[styles.productStock, stock > 0 ? styles.inStock : styles.outOfStock]}>
+        {stock > 0 ? `${stock} en stock` : 'Sin Stock'}
+      </Text>
     </View>
-    <Text style={[styles.productStatus, status === 'En Stock' ? styles.inStock : styles.outOfStock]}>
-      {status}
-    </Text>
   </View>
 );
 
 export default function VendorProductList() {
-  const router = useRouter(); // Hook para navegar entre pantallas
-
+  const router = useRouter();
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
+  const [sellerData, setSellerData] = useState<any>(null); // Estado para almacenar los datos del vendedor
+  const [products, setProducts] = useState<any[]>([]); // Estado para almacenar los productos
 
-  // Función para ocultar el sidebar con animación 'timing'
+  // Función para ocultar el sidebar con animación
   const closeSidebar = () => {
     Animated.timing(slideAnim, {
       toValue: -300,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setSidebarVisible(false);
@@ -52,30 +57,69 @@ export default function VendorProductList() {
     setSidebarVisible(true);
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start();
   };
 
-  // Función para obtener datos del SecureStore
-  const fetchUserData = async () => {
+  const fetchProductsBySellerId = async () => {
     try {
-      const userDataString = await SecureStore.getItemAsync('userData');
-      const userData = userDataString ? JSON.parse(userDataString) : null;
+      const token = await SecureStore.getItemAsync('userToken');
+      if (!token) {
+        console.error('Error: No se encontró el token de usuario');
+        alert('Error: No se encontró el token de usuario.');
+        return;
+      }
 
-      if (userData) {
-        console.log('Datos del usuario:', userData); // Mostrar datos en la consola
+      const sellerDataString = await SecureStore.getItemAsync('sellerData');
+      let sellerId = null;
+
+      if (sellerDataString) {
+        const sellerData = JSON.parse(sellerDataString);
+
+        if (sellerData && sellerData.id) {
+          sellerId = sellerData.id;
+          console.log('ID del vendedor recuperado:', sellerId);
+        } else {
+          console.error('Error: No se encontró el id del vendedor');
+          alert('Error: No se encontró el id del vendedor.');
+          return;
+        }
+      }
+
+      console.log('Datos a enviar:', sellerId);
+
+      const response = await axios.post(
+        'https://backend-j959.onrender.com/api/Product/GetProductsByIdSeller',
+        sellerId,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        console.log('Productos obtenidos exitosamente:', response.data);
+        setProducts(response.data); // Directamente asignar el arreglo de productos
       } else {
-        console.warn('No se encontraron datos de usuario en SecureStore');
+        console.error('Error en la respuesta:', response);
+        alert('Error al obtener los productos');
       }
     } catch (error) {
-      console.error('Error al obtener los datos del usuario:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Error en la respuesta de la API:', error.response?.data);
+        alert('Error en la solicitud a la API');
+      } else {
+        console.error('Error desconocido:', error);
+        alert('Ha ocurrido un error inesperado.');
+      }
     }
   };
 
-  // Usar useEffect para recuperar los datos al montar el componente
   useEffect(() => {
-    fetchUserData();
+    fetchProductsBySellerId();
   }, []);
 
   return (
@@ -98,33 +142,24 @@ export default function VendorProductList() {
           <Text style={styles.addButtonText}>Añadir Nuevo</Text>
         </TouchableOpacity>
       </View>
+
       <ScrollView style={styles.productList}>
-        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-          <ProductItem
-            name="Tomates Orgánicos"
-            price="3.50"
-            status="En Stock"
-            imageUrl={require('@/assets/images/tomate.jpg')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-          <ProductItem
-            name="Papas Orgánicas"
-            price="1.20"
-            status="En Stock"
-            imageUrl={require('@/assets/images/papas.jpg')}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-          <ProductItem
-            name="Zanahorias Orgánicas"
-            price="2.00"
-            status="Agotado"
-            imageUrl={require('@/assets/images/carrots.jpg')}
-          />
-        </TouchableOpacity>
+        {products && products.length > 0 ? (
+          products.map((product: any) => (
+            <TouchableOpacity key={product.id} onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+              <ProductItem
+                name={product.name}
+                description={product.description}
+                price={product.price}
+                stock={product.stock}
+                measure={product.measure}
+                imageUrl={product.imageUrl || 'default-image-url'} // Asumiendo una imagen por defecto si no hay URL
+              />
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text>No se encontraron productos disponibles</Text>
+        )}
       </ScrollView>
 
       <View style={styles.navbar}>
@@ -137,7 +172,7 @@ export default function VendorProductList() {
         <TouchableOpacity onPress={() => router.push('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
-      </View> 
+      </View>
 
       {/* Modal para el sidebar */}
       <Modal
@@ -149,7 +184,7 @@ export default function VendorProductList() {
         {overlayVisible && (
           <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />
         )}
-        <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
+        <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]} >
           <Sidebar isOpen={sidebarVisible} onToggle={closeSidebar} />
         </Animated.View>
       </Modal>
@@ -203,19 +238,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   productList: {
-    flex: 1,
+    marginBottom: 50,
   },
   productItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   productImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
     marginRight: 16,
   },
   productInfo: {
@@ -224,28 +258,38 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#333',
   },
-  productPrice: {
+  productDescription: {
     fontSize: 14,
     color: '#666',
   },
-  productStatus: {
+  productPrice: {
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#333',
+  },
+  productStock: {
+    fontSize: 14,
   },
   inStock: {
-    color: '#4CAF50',
+    color: 'green',
   },
   outOfStock: {
-    color: '#F44336',
+    color: 'red',
   },
   navbar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    padding: 16,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+    paddingVertical: 10,
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sidebarContainer: {
     position: 'absolute',
@@ -253,18 +297,7 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: 300,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.8,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'white',
+    elevation: 5,
   },
 });

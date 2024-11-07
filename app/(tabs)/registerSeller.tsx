@@ -1,262 +1,358 @@
-import React, { useState } from 'react';
+import 'react-native-get-random-values';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, SafeAreaView, Image
+    View, Text, SafeAreaView, ScrollView, KeyboardAvoidingView,
+    Platform, Image, TextInput, ActivityIndicator
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import axios from 'axios';
+import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from 'expo-checkbox';
+import styles from '@/assets/styles/registerSeller';
 import * as SecureStore from 'expo-secure-store';
 
-export default function StoreRegistrationScreen() {
-  const [formData, setFormData] = useState({
-    storeName: '',
-    description: '',
-    street: '',
-    exteriorNumber: '',
-    interiorNumber: '',
-    neighborhood: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    addressNotes: '',  // Cambiado de 'address' a 'addressNotes'
-    latitude: '',
-    longitude: '',
-  });
-
-  const router = useRouter();
-
-  const handleRegister = async () => {
-    const now = new Date().toISOString();
-    const dataWithTimestamps = {
-      id: '',  // El backend generará este ID
-      storeName: formData.storeName,
-      description: formData.description,
-      street: formData.street,
-      extNumber: formData.exteriorNumber,  // Cambiado a 'extNumber'
-      intNumber: formData.interiorNumber,  // Cambiado a 'intNumber'
-      neighborhood: formData.neighborhood,
-      city: formData.city,
-      state: formData.state,
-      cp: formData.postalCode,  // Cambiado a 'cp'
-      addressNotes: formData.addressNotes,  // Cambiado de 'address' a 'addressNotes'
-      latitude: parseFloat(formData.latitude),  // Convertido a número
-      longitude: parseFloat(formData.longitude),  // Convertido a número
-      createdAt: now,
-      updatedAt: now,
-      idUser: ''  // Este campo se llenará con el ID del usuario
-    };
-
-    console.log('Form submitted:', dataWithTimestamps);
-
-    try {
-      // Obtener el token del usuario almacenado en SecureStore
-      const userDataString = await SecureStore.getItemAsync('userData');
-      const userData = userDataString ? JSON.parse(userDataString) : null;
-
-      if (!userData || !userData.token) {
-        console.warn('Token no encontrado en SecureStore');
-        alert('No se ha encontrado el token de autenticación.');
-        return;
-      }
-
-      // Llenar el idUser con el ID del usuario recuperado
-      dataWithTimestamps.idUser = userData.id;  // Suponiendo que el ID del usuario está en userData
-
-      // Configurar el encabezado de autorización con el token
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userData.token}`,
-        },
-      };
-
-      // Hacer la solicitud POST con Axios y pasar el encabezado
-      const response = await axios.post('https://backend-j959.onrender.com/api/Seller/AddSeller', dataWithTimestamps, config);
-      console.log('Datos del vendedor guardados en la API:', response.data);
-
-      await AsyncStorage.setItem('datosVendedor', JSON.stringify(dataWithTimestamps));
-      console.log('Datos del vendedor guardados en AsyncStorage');
-
-      router.push('/home');
-
-    } catch (error) {
-      console.error('Error al registrar datos del vendedor:', error);
-      if (axios.isAxiosError(error)) {
-        alert(`Error: ${error.response?.data?.message || 'Ha ocurrido un error inesperado.'}`);
-      } else {
-        alert('Ha ocurrido un error inesperado.');
-      }
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.logoText}>Chepeat</Text>
+const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
+    return (
+        <View style={styles.inputContainer}>
+            <TextInput
+                style={[styles.input, style]}
+                placeholderTextColor="#999"
+                {...props}
+            />
         </View>
+    );
+};
 
-        <Text style={styles.title}>Regístrate</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nombre de la tienda"
-          value={formData.storeName}
-          onChangeText={(text) => setFormData({ ...formData, storeName: text })}
-        />
-
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Descripción"
-          value={formData.description}
-          onChangeText={(text) => setFormData({ ...formData, description: text })}
-          multiline
-          numberOfLines={3}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Calle"
-          value={formData.street}
-          onChangeText={(text) => setFormData({ ...formData, street: text })}
-        />
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Num. Exterior"
-            value={formData.exteriorNumber}
-            onChangeText={(text) => setFormData({ ...formData, exteriorNumber: text })}
-          />
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Num. Interior"
-            value={formData.interiorNumber}
-            onChangeText={(text) => setFormData({ ...formData, interiorNumber: text })}
-          />
-        </View>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Vecindario"
-          value={formData.neighborhood}
-          onChangeText={(text) => setFormData({ ...formData, neighborhood: text })}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Ciudad"
-          value={formData.city}
-          onChangeText={(text) => setFormData({ ...formData, city: text })}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Estado"
-          value={formData.state}
-          onChangeText={(text) => setFormData({ ...formData, state: text })}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="CP"
-          value={formData.postalCode}
-          onChangeText={(text) => setFormData({ ...formData, postalCode: text })}
-          keyboardType="numeric"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Notas de dirección"
-          value={formData.addressNotes}  // Cambiado de 'address' a 'addressNotes'
-          onChangeText={(text) => setFormData({ ...formData, addressNotes: text })}  // Cambiado aquí también
-        />
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Latitud"
-            value={formData.latitude}
-            onChangeText={(text) => setFormData({ ...formData, latitude: text })}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Longitud"
-            value={formData.longitude}
-            onChangeText={(text) => setFormData({ ...formData, longitude: text })}
-            keyboardType="numeric"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-          <Text style={styles.registerButtonText}>Registrar</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-  );
+interface AddressComponent {
+    long_name: string;
+    short_name: string;
+    types: string[];
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#df1c24',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    fontSize: 16,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  textArea: {
-    height: 80,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  halfInput: {
-    flex: 1,
-    marginRight: 10,
-  },
-  registerButton: {
-    backgroundColor: '#df1c24',
-    padding: 15,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  registerButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+export default function RegisterSeller() {
+    const [storeName, setStoreName] = useState('');
+    const [description, setDescription] = useState('');
+    const [street, setStreet] = useState('');
+    const [extNumber, setExtNumber] = useState('');
+    const [intNumber, setIntNumber] = useState('');
+    const [neighborhood, setNeighborhood] = useState('');
+    const [city, setCity] = useState('');
+    const [state, setState] = useState('');
+    const [cp, setCp] = useState('');
+    const [addressNotes, setAddressNotes] = useState('');
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [acceptTerms, setAcceptTerms] = useState(false);
+
+    const router = useRouter();
+
+    useEffect(() => {
+        const obtenerUbicacionInicial = async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    alert('Permiso de ubicación denegado');
+                    setIsLoading(false);
+                    return;
+                }
+
+                const ubicacion = await Location.getCurrentPositionAsync({});
+                setLatitude(ubicacion.coords.latitude);
+                setLongitude(ubicacion.coords.longitude);
+            } catch (error) {
+                console.error('Error al obtener la ubicación:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (latitude === null || longitude === null) {
+            obtenerUbicacionInicial();
+        } else {
+            setIsLoading(false);
+        }
+    }, [latitude, longitude]);
+
+    const handleCpChange = async (value: string) => {
+        setCp(value);
+        if (value.length === 5) {
+            try {
+                const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${value}&components=country:MX&key=AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI`);
+                const { results } = response.data;
+
+                console.log('Respuesta de la API:', response.data);
+
+                if (results.length > 0) {
+                    const { geometry, address_components } = results[0];
+
+                    setLatitude(geometry.location.lat);
+                    setLongitude(geometry.location.lng);
+
+                    const cityComponent = address_components.find((component: AddressComponent) =>
+                        component.types.includes("locality") ||
+                        component.types.includes("sublocality") ||
+                        component.types.includes("administrative_area_level_2")
+                    );
+                    const stateComponent = address_components.find((component: AddressComponent) =>
+                        component.types.includes("administrative_area_level_1")
+                    );
+
+                    setCity(cityComponent ? cityComponent.long_name : '');
+                    setState(stateComponent ? stateComponent.long_name : '');
+                } else {
+                    console.error('No se encontraron resultados para el código postal:', value);
+                    alert(`No se encontraron resultados para el código postal: ${value}`);
+                }
+            } catch (error) {
+                console.error('Error al obtener la dirección:', error);
+                alert('Error al obtener la dirección, por favor intenta de nuevo.');
+            }
+        }
+    };
+
+    const cleanData = (data: any) => {
+        return Object.keys(data).reduce((acc, key) => {
+            if (data[key] !== null && data[key] !== undefined) {
+                acc[key] = data[key];
+            }
+            return acc;
+        }, {} as any);
+    };
+
+
+
+    const handleRegisterSeller = async () => {
+        if (acceptTerms) {
+            console.log('Registro del negocio ingresado con:', storeName, description, street, extNumber, intNumber,
+                neighborhood, city, state, cp, addressNotes, latitude, longitude);
+
+            try {
+                // Obtener el token
+                const token = await SecureStore.getItemAsync('userToken');
+                if (!token) {
+                    console.error('Error: No se encontró el token de usuario');
+                    alert('Error: No se encontró el token de usuario.');
+                    return;
+                }
+
+                // Obtener y validar los datos del usuario
+                const userDataString = await SecureStore.getItemAsync('userData');
+                let userId = null;
+
+                if (userDataString) {
+                    const userData = JSON.parse(userDataString);
+
+                    // Acceder correctamente al ID del usuario
+                    if (userData && userData.user && userData.user.id) {
+                        userId = userData.user.id;
+                        console.log('ID del usuario recuperado:', userId);
+                    } else {
+                        console.error('Error: No se encontró el id del usuario en los datos de SecureStore');
+                        alert('Error: No se encontró el id del usuario en los datos.');
+                        return;
+                    }
+                } else {
+                    console.warn('Advertencia: No se encontraron datos de usuario en SecureStore');
+                    alert('Error: No se encontraron datos de usuario.');
+                    return;
+                }
+
+                const currentDate = new Date().toISOString();
+
+                const dataToSend = cleanData({
+                    storeName,
+                    description,
+                    street,
+                    extNumber,
+                    intNumber,
+                    neighborhood,
+                    city,
+                    state,
+                    cp,
+                    addressNotes,
+                    latitude,
+                    longitude,
+                    idUser: userId, // Enviar id del usuario en la petición
+                    createdAt: currentDate,
+                    updatedAt: currentDate,
+                });
+
+                const response = await axios.post(
+                    'https://backend-j959.onrender.com/api/Seller/AddUSeller',
+                    dataToSend,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    }
+                );
+                
+                const sellerData = response.data.seller;
+                console.log('Negocio registrado exitosamente:', response.data);
+
+                // Guarda los datos de seller en SecureStore
+                await SecureStore.setItemAsync('sellerData', JSON.stringify(sellerData));
+
+                router.push('/home');
+            } catch (error) {
+                if (axios.isAxiosError(error)) {
+                    console.error('Error en la respuesta de la API:', error.response?.data);
+                } else {
+                    console.error('Error desconocido:', error);
+                    alert('Ha ocurrido un error inesperado.');
+                }
+            }
+        } else {
+            alert('Debes aceptar los términos y condiciones para continuar.');
+        }
+    };
+
+
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <StatusBar style="auto" />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? "padding" : "height"}
+                style={styles.keyboardAvoidingView}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled">
+                    <View style={styles.imageTextContainer}>
+                        <Image
+                            source={require('@/assets/images/tenecuchillo.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.imageText}>Chepeat</Text>
+                    </View>
+
+                    <Text style={styles.title}>Registrar Negocio</Text>
+
+                    <StyledInput
+                        placeholder="Nombre del negocio"
+                        value={storeName}
+                        onChangeText={setStoreName}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Descripción"
+                        value={description}
+                        onChangeText={setDescription}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Código postal"
+                        value={cp}
+                        onChangeText={handleCpChange}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Estado"
+                        value={state}
+                        onChangeText={setState}
+                        style={styles.inputStyle}
+                        editable={false}
+                    />
+
+                    <StyledInput
+                        placeholder="Ciudad"
+                        value={city}
+                        onChangeText={setCity}
+                        style={styles.inputStyle}
+                        editable={false}
+                    />
+
+                    <StyledInput
+                        placeholder="Calle"
+                        value={street}
+                        onChangeText={setStreet}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Número exterior"
+                        value={extNumber}
+                        onChangeText={setExtNumber}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Número interior"
+                        value={intNumber}
+                        onChangeText={setIntNumber}
+                        style={styles.inputStyle}
+                    />
+
+                    <StyledInput
+                        placeholder="Colonia"
+                        value={neighborhood}
+                        onChangeText={setNeighborhood}
+                        style={styles.inputStyle}
+                    />
+
+
+                    <StyledInput
+                        placeholder="Notas de dirección"
+                        value={addressNotes}
+                        onChangeText={setAddressNotes}
+                        style={styles.inputStyle}
+                    />
+
+                    <View style={styles.mapContainer}>
+                        {isLoading ? (
+                            <ActivityIndicator size="large" color="#ff6e33" style={{ marginVertical: 20 }} />
+                        ) : (
+                            latitude !== null && longitude !== null && (
+                                <MapView
+                                    style={styles.map}
+                                    region={{
+                                        latitude: latitude,
+                                        longitude: longitude,
+                                        latitudeDelta: 0.01,
+                                        longitudeDelta: 0.01,
+                                    }}
+                                    onPress={(e) => {
+                                        const { latitude, longitude } = e.nativeEvent.coordinate;
+                                        setLatitude(latitude);
+                                        setLongitude(longitude);
+                                    }}
+                                >
+                                    <Marker
+                                        coordinate={{ latitude, longitude }}
+                                        draggable
+                                        onDragEnd={(e) => {
+                                            const { latitude, longitude } = e.nativeEvent.coordinate;
+                                            setLatitude(latitude);
+                                            setLongitude(longitude);
+                                        }}
+                                    />
+                                </MapView>
+                            )
+                        )}
+                    </View>
+
+                    <View style={styles.checkboxContainer}>
+                        <Checkbox
+                            value={acceptTerms}
+                            onValueChange={setAcceptTerms}
+                            color={acceptTerms ? '#df1c24' : undefined}
+                        />
+                        <Text style={styles.checkboxLabel}>
+                            Acepto los <Text style={styles.link}>términos y condiciones</Text>
+                        </Text>
+                    </View>
+
+                    <Button title="Registrar Negocio" onPress={handleRegisterSeller} style={styles.formButton} />
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+}

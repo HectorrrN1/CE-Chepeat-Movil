@@ -5,8 +5,10 @@ import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
 
 export default function AddProductScreen() {
+    const navigation = useNavigation(); // Usar el hook de navegación
     const [price, setPrice] = useState('');
     const [deliveryDateTime, setDeliveryDateTime] = useState(new Date());
     const [showDateTimePicker, setShowDateTimePicker] = useState(false);
@@ -17,34 +19,36 @@ export default function AddProductScreen() {
     const [stock, setStock] = useState('');
     const [measure, setMeasure] = useState('litros');
 
-    // Función para obtener datos del SecureStore y extraer el idSeller
+    // Función para obtener datos del SecureStore y extraer el id de sellerData
     const fetchUserData = async () => {
         try {
-            const userDataString = await SecureStore.getItemAsync('userData');
-            const userData = userDataString ? JSON.parse(userDataString) : null;
+            // Obtiene los datos de sellerData de SecureStore
+            const sellerDataString = await SecureStore.getItemAsync('sellerData');
+            const sellerData = sellerDataString ? JSON.parse(sellerDataString) : null;
 
-            if (userData) {
-                console.log('Datos del usuario:', userData); // Mostrar datos en la consola
-                const sellerId = userData.idSeller; // Suponiendo que el idSeller está en los datos del usuario
+            if (sellerData) {
+                console.log('Datos de seller recuperados:', sellerData); // Mostrar datos en la consola
+                const sellerId = sellerData.id; // Suponiendo que el id está en los datos de sellerData
                 if (sellerId) {
-                    setIdSeller(sellerId);
+                    setIdSeller(sellerId); // Almacena el id en el estado
                 } else {
-                    Alert.alert('Error', 'No se encontró el idSeller en los datos del usuario');
+                    Alert.alert('Error', 'No se encontró el id en los datos de seller');
                 }
             } else {
-                console.warn('No se encontraron datos de usuario en SecureStore');
-                Alert.alert('Error', 'No se encontraron datos de usuario');
+                console.warn('No se encontraron datos de seller en SecureStore');
+                Alert.alert('Error', 'No se encontraron datos de seller');
             }
         } catch (error) {
-            console.error('Error al obtener los datos del usuario:', error);
-            Alert.alert('Error', 'Hubo un problema al obtener los datos del usuario');
+            console.error('Error al obtener los datos de seller:', error);
+            Alert.alert('Error', 'Hubo un problema al obtener los datos del seller');
         }
     };
 
     // Usar useEffect para recuperar los datos al montar el componente
     useEffect(() => {
         fetchUserData();
-    }, []); 
+    }, []);
+
 
     const handleSave = async () => {
         if (!name || !price || !deliveryDateTime || !description || !stock || !measure || !idSeller) {
@@ -53,16 +57,37 @@ export default function AddProductScreen() {
         }
 
         try {
-            const response = await axios.post('https://backend-j959.onrender.com/api/Product/AddProduct', {
-                name,
-                description,
-                price: parseFloat(price),
-                stock: parseInt(stock),
-                measure,
-                deliveryTime: deliveryDateTime.toISOString(), // Enviar fecha y hora en formato ISO
-                idSeller: idSeller,
-            });
+            // Obtener el token de SecureStore
+            const token = await SecureStore.getItemAsync('userToken');
+            if (!token) {
+                console.error('Error: No se encontró el token de usuario');
+                Alert.alert('Error', 'No se encontró el token de usuario.');
+                return;
+            }
+
+            const response = await axios.post(
+                'https://backend-j959.onrender.com/api/Product/AddProduct',
+                {
+                    name,
+                    description,
+                    price: parseFloat(price),
+                    stock: parseInt(stock),
+                    measure,
+                    deliveryTime: deliveryDateTime.toISOString(),
+                    idSeller: idSeller,
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                }
+            );
+
             Alert.alert('Éxito', 'Producto guardado con éxito');
+
+            // Redirigir a la pantalla /sellerProducts
+            navigation.navigate('sellerProducts'); // Esto redirige a /sellerProducts
+
         } catch (error) {
             Alert.alert('Error', 'Hubo un problema al guardar el producto');
             console.error(error);
@@ -135,7 +160,7 @@ export default function AddProductScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Precio</Text>
+                    <Text style={styles.label}>Precio Mnx</Text>
                     <TextInput
                         style={styles.input}
                         value={price}
@@ -181,6 +206,8 @@ export default function AddProductScreen() {
                         <Picker.Item label="Litros" value="Litros" />
                         <Picker.Item label="Kilos" value="kilos" />
                         <Picker.Item label="Piezas" value="piezas" />
+                        <Picker.Item label="Paquetes" value="paquetes" />
+                        <Picker.Item label="Unidades" value="Unidades" />
                     </Picker>
                 </View>
             </ScrollView>

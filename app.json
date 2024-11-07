@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CE-Chepeat-Movil",
+    "name": "CE-Chepeat",
     "slug": "CE-Chepeat-Movil",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.jpablito.CEChepeatMovil",

@@ -3,8 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ima
 import { Feather } from '@expo/vector-icons';
 import Sidebar from '@/components/navigation/sidebar';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store'; // Importar SecureStore
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 type ProductItemProps = {
   name: string;
@@ -52,17 +53,14 @@ export default function ProductManagement() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
-
   const router = useRouter();
-
-  const [storeData, setStoreData] = useState(null); // Estado para almacenar los datos de la tienda
-
+  const [sellerData, setSellerData] = useState(null);
 
   // Función para ocultar el sidebar con animación 'timing'
   const closeSidebar = () => {
     Animated.timing(slideAnim, {
       toValue: -300,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setSidebarVisible(false);
@@ -76,33 +74,32 @@ export default function ProductManagement() {
     setSidebarVisible(true);
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start();
   };
 
-  // useEffect para recuperar los datos guardados
-useEffect(() => {
-  const fetchData = async () => {
+  const fetchSellerData = async () => {
     try {
-      const storedData = await AsyncStorage.getItem('datosVendedor');
-      if (storedData) {
-        const parsedData = JSON.parse(storedData); // Parsea los datos guardados
-        setStoreData(parsedData); // Almacena los datos en el estado
-        console.log('Datos del vendedor recuperados:', parsedData);
-        
-        // Visualiza el estado actualizado
-        console.log('Estado actualizado:', storeData);
+      // Obtiene los datos de sellerData de SecureStore
+      const sellerDataString = await SecureStore.getItemAsync('sellerData');
+      const sellerData = sellerDataString ? JSON.parse(sellerDataString) : null;
+
+      if (sellerData) {
+        console.log('Datos de seller recuperados:', sellerData);
+        setSellerData(sellerData); // Almacena los datos en el estado para usarlos en la vista
+      } else {
+        console.warn('No se encontraron datos de seller en SecureStore');
       }
     } catch (error) {
-      console.error('Error al recuperar datos del vendedor:', error);
+      console.error('Error al obtener los datos de seller:', error);
     }
   };
 
-  fetchData();
-}, []);
-
-
+  useEffect(() => {
+    fetchSellerData();
+  }, []);
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -115,51 +112,28 @@ useEffect(() => {
       <ScrollView style={styles.content}>
         <Text style={styles.sectionTitle}>Mis Productos</Text>
         <View style={styles.productContainer}>
-          <TouchableOpacity
-            onPress={() => router.push(`/productDetailSeller`)}
-            activeOpacity={1}
-          >
-            <ProductItem
-              name="Verduras Frescas"
-              price="12.99"
-              image={require('@/assets/images/verduras.jpg')}
-            />
+          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+            <ProductItem name="Verduras Frescas" price="12.99" image={require('@/assets/images/verduras.jpg')} />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push(`/productDetailSeller`)}
-            activeOpacity={1}
-          >
-          <ProductItem 
-            name="Pan Artesanal" 
-            price="5.50" 
-            image={require('@/assets/images/pan.jpg')} 
-          />
+          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+            <ProductItem name="Pan Artesanal" price="5.50" image={require('@/assets/images/pan.jpg')} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/addProductSeller')}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/addProductSeller')}>
           <Text style={styles.addButtonText}>Agregar Producto</Text>
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Solicitudes de Productos</Text>
         <View style={styles.productContainer}>
-          <TouchableOpacity
-            onPress={() => router.push(`/userProfile`)}
-            activeOpacity={1}
-          >
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
             <View style={styles.sectionContainer}>
               <RequestItem name="Juan Pablo" time="Hace 2 horas" />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push(`/userProfile`)}
-            activeOpacity={1}
-          >
-          <View style={styles.sectionContainer}>
-            <RequestItem name="Emily Johnson quiere comprar Pan Artesanal" time="Ayer" />
-          </View>
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Emily Johnson quiere comprar Pan Artesanal" time="Ayer" />
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -179,34 +153,26 @@ useEffect(() => {
         <TouchableOpacity onPress={() => router.push('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
           <Feather name="list" size={24} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
       {/* Modal para el sidebar */}
-      <Modal
-        transparent={true}
-        visible={sidebarVisible}
-        animationType="none"
-        onRequestClose={closeSidebar}
-      >
-        {overlayVisible && (
-          <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />
-        )}
+      <Modal transparent={true} visible={sidebarVisible} animationType="none" onRequestClose={closeSidebar}>
+        {overlayVisible && <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />}
         <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
           <Sidebar isOpen={sidebarVisible} onToggle={closeSidebar} />
         </Animated.View>
       </Modal>
-
     </SafeAreaView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
