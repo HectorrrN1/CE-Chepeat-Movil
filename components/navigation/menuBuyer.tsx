@@ -6,6 +6,8 @@ import * as SecureStore from 'expo-secure-store';
 
 interface UserData {
   fullname: string;
+  isSeller: boolean;
+  isBuyer: boolean;
 }
 
 interface MenuBuyerProps {
@@ -15,8 +17,6 @@ interface MenuBuyerProps {
 
 const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
-  const [isSeller, setIsSeller] = useState(false); // Estado para controlar el rol actual
-  const [firstTimeSeller, setFirstTimeSeller] = useState(true); // Estado para controlar el registro inicial de vendedor
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -24,19 +24,18 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
     const loadUserData = async () => {
       const storedUserData = await SecureStore.getItemAsync('userData');
       if (storedUserData) {
-        setUserData(JSON.parse(storedUserData));
+        const parsedData = JSON.parse(storedUserData);
+        setUserData(parsedData);
       }
     };
     loadUserData();
   }, []);
 
-  // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
   });
 
-  // Función para manejar el cambio de estado del sidebar
   const handleToggle = () => {
     Animated.timing(rotationAnim, {
       toValue: isOpen ? 0 : 1,
@@ -46,7 +45,6 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
     onToggle();
   };
 
-  // Función para cerrar sesión con un pequeño retraso
   const handleLogout = () => {
     handleToggle();
     setTimeout(() => {
@@ -54,21 +52,11 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
     }, 300);
   };
 
-  // Función para cambiar de rol
-  const handleRoleSwitch = () => {
-    handleToggle();
-
-    if (!isSeller && firstTimeSeller) {
-      // Primera vez que entra al modo vendedor, redirige a la pantalla de registro de vendedor
-      setFirstTimeSeller(false);
-      setIsSeller(true);
-      router.push('/registerSeller');
+  const handleBecomeSeller = () => {
+    if (userData?.isSeller) {
+      router.push('/home'); // Si ya es vendedor, ir a homeBuyer
     } else {
-      // Cambia de rol sin registro adicional
-      setIsSeller(!isSeller);
-      setTimeout(() => {
-        router.push(isSeller ? '/homeBuyer' : '/home'); // Navega a la pantalla adecuada
-      }, 300);
+      router.push('/registerSeller'); // Si no es vendedor, ir a registerSeller
     }
   };
 
@@ -86,12 +74,12 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-            {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+              {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
             </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
           <Text style={styles.username}>
-          {userData ? userData.fullname : 'Cargando...'}
+            {userData ? userData.fullname : 'Cargando...'}
           </Text>
         </View>
 
@@ -100,15 +88,15 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
             <Feather name="search" size={24} color="black" />
             <Text style={styles.menuItemText}>Buscar comida</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profileBuyer')}>
             <Feather name="user" size={24} color="black" />
-            <Text style={styles.menuItemText} onPress={() => router.push('/profileBuyer')}>Mi cuenta</Text>
+            <Text style={styles.menuItemText}>Mi cuenta</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={handleRoleSwitch}>
-            <Feather name="tag" size={24} color="black" />
-            <Text style={styles.menuItemText}>
-              {isSeller ? 'Modo Cliente' : 'Quiero ser Vendedor'}
-            </Text>
+
+          {/* Botón único "Quiero ser vendedor" */}
+          <TouchableOpacity style={styles.menuItem} onPress={handleBecomeSeller}>
+            <Feather name="user-check" size={24} color="black" />
+            <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -140,18 +128,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#E0E0E0',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ff6e33',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: 'black',
+    color: 'white',
   },
   greeting: {
     fontSize: 16,

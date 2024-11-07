@@ -169,6 +169,11 @@ export default function RegisterSeller() {
                 );
     
                 console.log('Negocio registrado exitosamente:', response.data);
+    
+                // Guarda los datos de la respuesta en expo-secure-store
+                await SecureStore.setItemAsync('sellerData', JSON.stringify(response.data));
+    
+                // Redirige al usuario
                 router.push('/home');
             } catch (error) {
                 if (axios.isAxiosError(error)) {
@@ -182,10 +187,6 @@ export default function RegisterSeller() {
             alert('Debes aceptar los términos y condiciones para continuar.');
         }
     };
-    
-    
-    
-    
 
     return (
         <SafeAreaView style={styles.container}>

@@ -191,7 +191,7 @@ export default function homeBuyer() {
             ) : (
               latitude !== null && longitude !== null && (
                 <MapView
-                provider={PROVIDER_GOOGLE}
+                //provider={PROVIDER_GOOGLE}
                   style={styles.map}
                   region={{
                     latitude: latitude,

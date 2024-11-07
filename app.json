@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "CE-Chepeat-Movil",
-    "slug": "CE-Chepeat-Movil",
+    "name": "Chepeat",
+    "slug": "Chepeat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/images/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,25 +18,25 @@
         "googleMapsApiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
       },
       "infoPlist": {
-    "NSLocationWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas.",
-    "NSLocationAlwaysUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas."
-  }
+        "NSLocationWhenInUseUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas.",
+        "NSLocationAlwaysUsageDescription": "Esta aplicación necesita acceso a tu ubicación para mostrar mapas."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": ".assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jpablito.CEChepeatMovil",
+      "package": "com.jpablito.Chepeat",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCj3tSGFatl1_SoYh6l6VZ06A0su2oJWcI"
         }
       },
       "permissions": [
-    "ACCESS_FINE_LOCATION",
-    "ACCESS_COARSE_LOCATION"
-  ]
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -51,7 +51,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "6b6541c1-32c1-4b65-9e67-febaf13bc3ac"
+        "projectId": "10013c19-afd5-444b-939a-ed0304f5134a"
       }
     }
   }

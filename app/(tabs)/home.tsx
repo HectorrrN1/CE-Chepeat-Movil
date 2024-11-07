@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 // Importa el contenido del sidebar desde otro archivo
 import Sidebar from '@/components/navigation/sidebar';
 import { useRouter } from 'expo-router';
+import SecureStore from 'expo-secure-store';
 
 
 type ProductItemProps = {
