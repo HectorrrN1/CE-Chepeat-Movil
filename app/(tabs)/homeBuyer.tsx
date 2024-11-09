@@ -1,20 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   SafeAreaView, View, KeyboardAvoidingView,
-  Platform, TextInput, StyleSheet, Image, Text,
+  Platform, TextInput, Image, Text,
   ScrollView, Alert, ActivityIndicator, Dimensions,
   FlatList, Animated, TouchableOpacity, Modal
 } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import Carousel from 'react-native-snap-carousel';
 import HeaderComponent from '@/components/navigation/headerComponent';
 import BottomBarComponent from '@/components/navigation/bottomComponent';
 import MenuBuyer from '@/components/navigation/menuBuyer';
+import * as SecureStore from 'expo-secure-store';
+import axios, { AxiosError } from 'axios';
+import { styles } from '@/assets/styles/homeBuyer.styles'; // Importa los estilos desde el archivo separado
 
 const { width: viewportWidth } = Dimensions.get('window');
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  measure: string;
+  idSeller: string;
+  latitude?: number;
+  longitude?: number;
+  image?: string;
+}
+
+interface Seller {
+  id: string;
+  storeName: string;
+  description: string;
+  street: string;
+  extNumber: string;
+  intNumber: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  cp: string;
+  addressNotes?: string;
+  latitude: number;
+  longitude: number;
+  rating: number;
+  createdAt: string; // Puedes usar Date si conviertes este string a Date al recibir los datos
+  updatedAt: string; // Igual que arriba, Date es una opción si haces conversión
+  idUser: string;
+}
+
+interface ProductWithSeller extends Product {
+  sellerData: Seller;
+}
+
+
 
 const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
@@ -30,18 +73,75 @@ const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
 };
 
 export default function homeBuyer() {
+
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [search, setSearch] = useState('');
-  const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<ProductWithSeller[]>([]);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
 
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Función para obtener productos desde la API
+  const fetchProducts = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('userToken');
+      const lat = latitude ? parseFloat(latitude.toString()) : null;
+      const lon = longitude ? parseFloat(longitude.toString()) : null;
+
+      if (lat === null || lon === null) {
+        Alert.alert('Error', 'No se pudo obtener la ubicación actual.');
+        return;
+      }
+
+      // Obtener productos cercanos
+      const response = await axios.post(
+        'https://backend-j959.onrender.com/api/Product/GetProductsByRadius',
+        { latitude: lat, longitude: lon, radiusKm: 500 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const productData = response.data.slice(0, 6);
+
+      // Obtener datos de vendedores para cada producto
+      const productsWithSellerData = await Promise.all(
+        productData.map(async (product: Product) => {
+          const sellerResponse = await axios.post(
+            'https://backend-j959.onrender.com/api/Seller/SelectSellerById',
+            product.idSeller,  // El `idSeller` se envía en el cuerpo de la solicitud
+            { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+          );
+          return { ...product, sellerData: sellerResponse.data };
+        })
+      );
+
+
+
+      // Guardar datos en SecureStore
+      await SecureStore.setItemAsync('products', JSON.stringify(productsWithSellerData));
+
+      // Mostrar productos en la consola para verificación
+      console.log('Productos con datos del vendedor:', productsWithSellerData);
+
+      setProducts(productsWithSellerData);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('Error fetching products or seller data:', error.response?.data || error.message);
+        Alert.alert('Error', error.response?.data?.title || 'No se pudieron obtener los productos.');
+      } else {
+        console.error('Unexpected error:', error);
+        Alert.alert('Error', 'Ocurrió un error inesperado.');
+      }
+    }
+  };
+
+
 
 
   const closeMenu = () => {
@@ -76,39 +176,39 @@ export default function homeBuyer() {
     { id: 2, title: '30% de descuento', image: require('../../assets/images/tacosd.jpg'), description: 'En toda la comida' },
   ];
 
-  const productItems = [
-    { id: 1, name: 'Tacos', price: '25', amount: '3 piezas', image: require('../../assets/images/tacosd.jpg') },
-    { id: 2, name: 'Torta', price: '20', amount: '1 pieza', image: require('../../assets/images/torta.jpg') },
-    { id: 3, name: 'Postre', price: '15', amount: '1 pieza', image: require('../../assets/images/postre.jpg') },
-    { id: 4, name: 'Pizza grande', price: '20', amount: '/100g', image: require('../../assets/images/pizza.jpg') },
-    { id: 5, name: 'Burrito', price: '10', amount: '1 pieza', image: require('../../assets/images/burrito.jpg') },
-    { id: 6, name: 'Ensalada', price: '25', amount: '1 pieza', image: require('../../assets/images/ensalada.jpg') },
-  ];
 
   useEffect(() => {
     const obtenerUbicacionInicial = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          alert('Permiso de ubicación denegado');
+          Alert.alert('Error', 'Permiso de ubicación denegado');
           setIsLoading(false);
           return;
         }
 
+        // Obtener la ubicación actual
         const ubicacion = await Location.getCurrentPositionAsync({});
         setLatitude(ubicacion.coords.latitude);
         setLongitude(ubicacion.coords.longitude);
+
+        // Verificar en consola las coordenadas obtenidas
+        console.log("Ubicación obtenida:", ubicacion.coords);
       } catch (error) {
         console.error('Error al obtener la ubicación:', error);
+        Alert.alert('Error', 'No se pudo obtener la ubicación actual.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (latitude === null || longitude === null) {
-      obtenerUbicacionInicial();
-    } else {
-      setIsLoading(false);
+    obtenerUbicacionInicial();
+  }, []);
+
+  useEffect(() => {
+    // Llamar a la API solo cuando latitude y longitude estén definidos
+    if (latitude && longitude) {
+      fetchProducts();
     }
   }, [latitude, longitude]);
 
@@ -125,31 +225,25 @@ export default function homeBuyer() {
     );
   };
 
-  const renderProductItem = ({ item }: { item: { id: number; name: string; price: string; amount: string; image: any } }) => {
-    const handleViewMore = () => {
-      router.push({
-        pathname: '/productDetails',
-        params: {
-          name: item.name,
-          price: item.price,
-          amount: item.amount,
-          image: item.image,
-        },
-      });
-    };
-
-    return (
-      <TouchableOpacity onPress={handleViewMore} style={styles.productCard}>
-        <Image source={item.image} style={styles.productImage} />
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productPrice}>${item.price}</Text>
-        <Text style={styles.productAmount}>{item.amount}</Text>
-        <TouchableOpacity onPress={handleViewMore}>
-          <Text style={styles.productButton}>Ver más</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    );
+  const handleProductPress = (product: ProductWithSeller) => {
+    router.push({
+      pathname: '/productDetails',
+      params: { name: product.name }  // Asegúrate de pasar solo el nombre aquí
+    });
   };
+
+  const renderProductItem = ({ item }: { item: ProductWithSeller }) => (
+    <TouchableOpacity style={styles.productCard} onPress={() => handleProductPress(item)}>
+      <Image source={item.image ? { uri: item.image } : require('../../assets/images/logo.png')} style={styles.productImage} />
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
+      <Text style={styles.productStock}>{item.stock} {item.measure}</Text>
+      <TouchableOpacity>
+        <Text style={styles.productButton}>Ver más</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
 
 
   if (errorMsg) {
@@ -189,31 +283,24 @@ export default function homeBuyer() {
             {isLoading ? (
               <ActivityIndicator size="large" color="#ff6e33" style={{ marginVertical: 20 }} />
             ) : (
-              latitude !== null && longitude !== null && (
+              latitude && longitude && (
                 <MapView
-                //provider={PROVIDER_GOOGLE}
+                  //provider={PROVIDER_GOOGLE}
                   style={styles.map}
-                  region={{
-                    latitude: latitude,
-                    longitude: longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  onPress={(e) => {
-                    const { latitude, longitude } = e.nativeEvent.coordinate;
-                    setLatitude(latitude);
-                    setLongitude(longitude);
-                  }}
+                  region={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
                 >
-                  <Marker
-                    coordinate={{ latitude, longitude }}
-                    draggable
-                    onDragEnd={(e) => {
-                      const { latitude, longitude } = e.nativeEvent.coordinate;
-                      setLatitude(latitude);
-                      setLongitude(longitude);
-                    }}
-                  />
+                  <Marker coordinate={{ latitude, longitude }} />
+                  {products.map((product, index) => (
+                    product.latitude && product.longitude ? (
+                      <Marker
+                        key={index}
+                        coordinate={{ latitude: product.latitude, longitude: product.longitude }}
+                        title={product.name}
+                      >
+                        <Image source={product.image ? { uri: product.image } : require('../../assets/images/logo.png')} style={styles.carouselImage} />
+                      </Marker>
+                    ) : null
+                  ))}
                 </MapView>
               )
             )}
@@ -235,7 +322,7 @@ export default function homeBuyer() {
           <View style={styles.productGridContainer}>
             <Text style={styles.headerProduct}>Productos</Text>
             <FlatList
-              data={productItems}
+              data={products}
               renderItem={renderProductItem}
               keyExtractor={(item) => item.id.toString()}
               numColumns={2}
@@ -248,178 +335,3 @@ export default function homeBuyer() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    marginTop: 35,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5'
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-  },
-  searchContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 25,
-    height: 50,
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    backgroundColor: '#FFFFFF',
-    width: '100%',
-    marginBottom: 15,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  input: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-  mapContainer: {
-    width: '100%',
-    height: 300,
-    alignItems: 'center',
-    marginBottom: 10,
-    borderRadius: 20,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 20,
-  },
-  carouselContainer: {
-    marginTop: 20,
-  },
-  card: {
-    backgroundColor: '#df1c24',
-    borderRadius: 15,
-    flexDirection: 'row',
-    padding: 10,
-    alignItems: 'center',
-    height: 120,
-  },
-  cardContent: {
-    flex: 1,
-    paddingRight: 10,
-    height: '100%',
-  },
-  carouselImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 15,
-    marginLeft: 10,
-  },
-  carouselTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  carouselDescription: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  productGridContainer: {
-    marginTop: 20,
-    flex: 1,
-  },
-  headerProduct: {
-    fontSize: 20,
-
-  },
-  productCard: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 10,
-    width: (viewportWidth / 2) - 25,
-    padding: 10,
-    margin: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  productImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-
-  },
-  productPrice: {
-    fontSize: 14,
-    color: '#df1c24',
-    fontWeight: 'bold',
-  },
-  productAmount: {
-    fontSize: 12,
-    color: '#999',
-  },
-  productButton: {
-    fontSize: 12,
-    color: '#df1c24',
-    marginTop: 10,
-    fontWeight: '600',
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  sidebarContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: 300,
-    borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-});

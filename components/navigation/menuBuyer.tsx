@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 
 interface UserData {
   fullname: string;
@@ -45,12 +46,52 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
     onToggle();
   };
 
-  const handleLogout = () => {
-    handleToggle();
+  // Función para enviar el refreshToken y hacer logout
+const logoutRequest = async () => {
+  try {
+    // Obtener el refreshToken almacenado
+    const refreshToken = await SecureStore.getItemAsync('refreshToken');
+    if (!refreshToken) {
+      throw new Error("Refresh token not found");
+    }
+
+    // Enviar el refreshToken al backend para hacer el logout
+    await axios.post('https://backend-j959.onrender.com/api/Auth/CerrarSesion', { refreshToken });
+
+    console.log('Se cerró la sesion');
+  } catch (error) {
+    console.error('Error al hacer logout:', error);
+    throw error; // Re-lanzar el error para que el handleLogout lo maneje
+  }
+};
+
+// Función para manejar el logout
+const handleLogout = async () => {
+  try {
+    const refreshToken = await SecureStore.getItemAsync('refreshToken');
+    if (!refreshToken) {
+      console.log('No se puede hacer logout: refreshToken no encontrado');
+      return; // Detener el flujo si no se encuentra el refreshToken
+    }
+
+    // Llamar a la función de logout
+    await logoutRequest(); 
+    
+    // Eliminar los tokens y datos del usuario
+    await SecureStore.deleteItemAsync('userToken');
+    await SecureStore.deleteItemAsync('userData');
+    await SecureStore.deleteItemAsync('refreshToken');
+    await SecureStore.deleteItemAsync('sellerData');
+
+    handleToggle(); // Si tienes un toggle para cambiar estado del UI
     setTimeout(() => {
-      router.push('/');
+      router.push('/'); // Redirigir a la pantalla de login
     }, 300);
-  };
+  } catch (error) {
+    console.error('Error al manejar el logout:', error);
+  }
+};
+
 
   const handleBecomeSeller = () => {
     if (userData?.isSeller) {

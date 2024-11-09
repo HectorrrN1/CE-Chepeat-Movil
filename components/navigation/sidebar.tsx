@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 // Definición de las propiedades del componente
 interface SidebarProps {
@@ -9,9 +10,36 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+interface SellerData {
+  fullname: string;
+  storeName: string;
+  isSeller: boolean;
+  isBuyer: boolean;
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
+  const [sellerData, setSellerData] = useState<SellerData | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadSellerData = async () => {
+      try {
+        const storedSellerData = await SecureStore.getItemAsync('sellerData');
+        if (storedSellerData) {
+          const parsedData = JSON.parse(storedSellerData);
+          setSellerData(parsedData);
+          console.log("Datos cargados en Sidebar:", parsedData);
+        } else {
+          console.log("No se encontraron datos en SecureStore");
+        }
+      } catch (error) {
+        console.error("Error al cargar sellerData:", error);
+      }
+    };
+    
+    loadSellerData();
+  }, []);
 
   // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
@@ -54,10 +82,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       <View style={styles.contentContainer}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>U</Text>
+            <Text style={styles.avatarText}>
+            {sellerData ? sellerData.storeName.charAt(0).toUpperCase() : 'U'}
+            </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
-          <Text style={styles.username}>Usuario</Text>
+          <Text style={styles.username}>
+          {sellerData ?.storeName}
+          </Text>
         </View>
 
         <View style={styles.menuItems}>
@@ -133,13 +165,13 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#df1c24',
+    backgroundColor: '#ff6e33',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
@@ -163,16 +195,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    marginHorizontal: 10,
   },
   menuItemText: {
     marginLeft: 15,
     fontSize: 16,
   },
   logoutContainer: {
-    justifyContent: 'flex-end', // Empujar el botón de cerrar sesión hacia abajo
-    paddingBottom: 20, // Un poco de espacio para que no esté pegado al borde inferior
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   logoutButton: {
     borderWidth: 2,

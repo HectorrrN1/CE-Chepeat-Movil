@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, Modal, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-// Importa el contenido del sidebar desde otro archivo
 import Sidebar from '@/components/navigation/sidebar';
 import { useRouter } from 'expo-router';
-import SecureStore from 'expo-secure-store';
-
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 type ProductItemProps = {
   name: string;
@@ -52,15 +51,58 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ name, time }) => (
 export default function ProductManagement() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
+  const [userData, setUserData] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current;
-
   const router = useRouter();
+
+  useEffect(() => {
+    // Función para cargar datos del usuario al iniciar
+    const fetchUserData = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('userToken');
+        const storedUserData = await SecureStore.getItemAsync('userData');
+        const userId = storedUserData ? JSON.parse(storedUserData).id : null;
+  
+        console.log('Token:', token, 'UserId:', userId);
+  
+        if (token && userId) {
+          const response = await axios.post(
+            'https://backend-j959.onrender.com/api/Seller/SelectSellerByIdUser',
+            userId, // Enviar solo el userId directamente
+            {
+              headers: {
+                Authorization: `Bearer ${token}`, // Token en la cabecera de autorización
+                'Content-Type': 'application/json' // Asegura el tipo de contenido correcto
+              },
+            }
+          );          
+  
+          const userData = response.data;
+          console.log('Datos del usuario:', userData);
+          await SecureStore.setItemAsync('sellerData', JSON.stringify(userData));
+          setUserData(userData);
+        } else {
+          console.error("Token o userId no disponible.");
+        }
+      } catch (error) {
+        if (error) {
+          console.error('Error de respuesta del servidor:', error);
+        } else {
+          console.error('Error de solicitud:', error);
+        }
+      }
+    };
+  
+    fetchUserData(); // Llamar a la función al cargar la vista
+  }, []);
+  
+
 
   // Función para ocultar el sidebar con animación 'timing'
   const closeSidebar = () => {
     Animated.timing(slideAnim, {
       toValue: -300,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setSidebarVisible(false);
@@ -74,7 +116,7 @@ export default function ProductManagement() {
     setSidebarVisible(true);
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 300, // Duración de la animación
+      duration: 300,
       useNativeDriver: true,
     }).start();
   };
@@ -89,66 +131,30 @@ export default function ProductManagement() {
       </View>
 
       <ScrollView style={styles.content}>
-
-        {/*<TouchableOpacity onPress={() => router.push(`/productDetail?name=${name}`)}>
-          <View style={styles.productItemContainer}>
-            <View style={styles.productItem}>
-              <Image source={image} style={styles.productImage} />
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{name}</Text>
-                <Text style={styles.productPrice}>${price}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-        */}
         <Text style={styles.sectionTitle}>Mis Productos</Text>
         <View style={styles.productContainer}>
-          <TouchableOpacity
-            onPress={() => router.push(`/productDetailSeller`)}
-            activeOpacity={1}
-          >
-            <ProductItem
-              name="Verduras Frescas"
-              price="12.99"
-              image={require('@/assets/images/verduras.jpg')}
-            />
+          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+            <ProductItem name="Verduras Frescas" price="12.99" image={require('@/assets/images/verduras.jpg')} />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push(`/productDetailSeller`)}
-            activeOpacity={1}
-          >
-          <ProductItem 
-            name="Pan Artesanal" 
-            price="5.50" 
-            image={require('@/assets/images/pan.jpg')} 
-          />
+          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+            <ProductItem name="Pan Artesanal" price="5.50" image={require('@/assets/images/pan.jpg')} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/addProductSeller')} // Usa el nombre de la pantalla
-        >
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/addProductSeller')}>
           <Text style={styles.addButtonText}>Agregar Producto</Text>
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Solicitudes de Productos</Text>
         <View style={styles.productContainer}>
-          <TouchableOpacity
-            onPress={() => router.push(`/userProfile`)}
-            activeOpacity={1}
-          >
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
             <View style={styles.sectionContainer}>
               <RequestItem name="Juan Pablo" time="Hace 2 horas" />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push(`/userProfile`)}
-            activeOpacity={1}
-          >
-          <View style={styles.sectionContainer}>
-            <RequestItem name="Emily Johnson quiere comprar Pan Artesanal" time="Ayer" />
-          </View>
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Emily Johnson quiere comprar Pan Artesanal" time="Ayer" />
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -157,7 +163,7 @@ export default function ProductManagement() {
           <View style={styles.sectionContainer}>
             <HistoryItem name="Michael Brown compró Verduras Frescas" time="Hace 2 días" />
           </View>
-          <View style={styles.sectionContainer}>  
+          <View style={styles.sectionContainer}>
             <HistoryItem name="Sarah Davis compró Pan Artesanal" time="La semana pasada" />
           </View>
         </View>
@@ -168,34 +174,26 @@ export default function ProductManagement() {
         <TouchableOpacity onPress={() => router.push('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
           <Feather name="list" size={24} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Modal que representa el sidebar */}
-      <Modal
-        transparent={true}
-        visible={sidebarVisible}
-        animationType="none"
-        onRequestClose={closeSidebar}
-      >
-        {overlayVisible && (
-          <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />
-        )}
+      {/* Modal para el sidebar */}
+      <Modal transparent={true} visible={sidebarVisible} animationType="none" onRequestClose={closeSidebar}>
+        {overlayVisible && <TouchableOpacity style={styles.modalOverlay} onPress={closeSidebar} />}
         <Animated.View style={[styles.sidebarContainer, { transform: [{ translateX: slideAnim }] }]}>
-          {/* Llama el contenido del sidebar desde otro componente */}
           <Sidebar isOpen={sidebarVisible} onToggle={closeSidebar} />
         </Animated.View>
       </Modal>
     </SafeAreaView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {

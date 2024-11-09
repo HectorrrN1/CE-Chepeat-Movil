@@ -63,18 +63,18 @@ export default function LoginScreen() {
           password,
         });
 
-        console.log('Respuesta del servidor: ', response.data);
-
         if (response.data.numError === 1 && response.data.token) {
           //Si el login es exitoso, se guarda el JWT Y 
           // los datos del usuario en SecureStore
           const token = response.data.token;
+          const refreshToken = response.data.refreshToken;
           const userData = response.data.user;
 
           await SecureStore.setItemAsync('userToken', token);
+          await SecureStore.setItemAsync('refreshToken', refreshToken);
           await SecureStore.setItemAsync('userData', JSON.stringify(userData));
 
-          console.log('Inicio de sesión exitoso, token y datos del usuario guardados: ', token, userData);
+          console.log('Inicio de sesión exitoso, token y datos del usuario guardados: ', token, refreshToken, userData);
 
           //Se redirige a la pantalla principal
           router.push('/homeBuyer');
@@ -87,25 +87,6 @@ export default function LoginScreen() {
         setModalMessage('Error al intentar iniciar sesión, verifica tu conexión o credenciales. ');
         setIsModalVisible(true);
       }
-    }
-  };
-
-
-  const fetchUserData = async () => {
-    try {
-      // Obtener el token almacenado
-      const token = await SecureStore.getItemAsync('userToken');
-
-      const response = await axios.get('https://backend-j959.onrender.com/api/User/GetUsers', {
-        headers: {
-          'Authorization': `Bearer ${token}`, // Se agregra el token en la cabecera :)
-        },
-      });
-
-      // Procesar los datos recibidos
-      console.log(response.data);
-    } catch (error) {
-      console.error('Error al obtener los datos del usuario:', error);
     }
   };
 

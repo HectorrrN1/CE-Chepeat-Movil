@@ -171,7 +171,7 @@ export default function RegisterSeller() {
                 console.log('Negocio registrado exitosamente:', response.data);
     
                 // Guarda los datos de la respuesta en expo-secure-store
-                await SecureStore.setItemAsync('sellerData', JSON.stringify(response.data));
+                //await SecureStore.setItemAsync('sellerData', JSON.stringify(response.data));
     
                 // Redirige al usuario
                 router.push('/home');
@@ -242,7 +242,6 @@ export default function RegisterSeller() {
                         value={city}
                         onChangeText={setCity}
                         style={styles.inputStyle}
-                        editable={false}
                     />
 
                     <StyledInput
@@ -256,7 +255,6 @@ export default function RegisterSeller() {
                         placeholder="Número exterior"
                         value={extNumber}
                         onChangeText={setExtNumber}
-                        keyboardType="numeric"
                         style={styles.inputStyle}
                     />
 
@@ -264,7 +262,6 @@ export default function RegisterSeller() {
                         placeholder="Número interior"
                         value={intNumber}
                         onChangeText={setIntNumber}
-                        keyboardType="numeric"
                         style={styles.inputStyle}
                     />
 
