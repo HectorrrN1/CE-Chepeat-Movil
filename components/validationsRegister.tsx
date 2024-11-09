@@ -38,7 +38,7 @@ export const validateName = (name: string) => {
       (v: string) => v.length <= 15 || 'Máximo 15 caracteres',
       (v: string) =>
         /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&])\S{8,15}$/.test(v) ||
-        'La contraseña debe contener al menos 8 caracteres, incluyendo letras, números y puede contener símbolos',
+        'La contraseña debe contener al menos 8 caracteres, incluyendo una letras Mayuscula y minuscula, números y puede contener símbolos. Ejemplo: P@ssword123',
     ];
   
     for (let rule of passRules) {

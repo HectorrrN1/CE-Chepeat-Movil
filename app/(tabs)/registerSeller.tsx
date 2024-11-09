@@ -129,40 +129,39 @@ export default function RegisterSeller() {
         if (acceptTerms) {
             console.log('Registro del negocio ingresado con:', storeName, description, street, extNumber, intNumber,
                 neighborhood, city, state, cp, addressNotes, latitude, longitude);
-
+    
             try {
-                // Obtener el token
-                const token = await SecureStore.getItemAsync('userToken');
+                // Obtener los datos de usuario almacenados en SecureStore
+                const userDataString = await SecureStore.getItemAsync('userData');
+                if (!userDataString) {
+                    console.error('Error: No se encontraron los datos del usuario');
+                    alert('Error: No se encontraron los datos del usuario.');
+                    return;
+                }
+    
+                // Parsear los datos de usuario para obtener el token
+                const userData = JSON.parse(userDataString);
+                const token = userData.token;  // Aquí obtenemos el token desde userData
+    
                 if (!token) {
                     console.error('Error: No se encontró el token de usuario');
                     alert('Error: No se encontró el token de usuario.');
                     return;
                 }
-
-                // Obtener y validar los datos del usuario
-                const userDataString = await SecureStore.getItemAsync('userData');
+    
+                // Obtener el ID del usuario desde los datos de SecureStore
                 let userId = null;
-
-                if (userDataString) {
-                    const userData = JSON.parse(userDataString);
-
-                    // Acceder correctamente al ID del usuario
-                    if (userData && userData.user && userData.user.id) {
-                        userId = userData.user.id;
-                        console.log('ID del usuario recuperado:', userId);
-                    } else {
-                        console.error('Error: No se encontró el id del usuario en los datos de SecureStore');
-                        alert('Error: No se encontró el id del usuario en los datos.');
-                        return;
-                    }
+                if (userData && userData.user && userData.user.id) {
+                    userId = userData.user.id;
+                    console.log('ID del usuario recuperado:', userId);
                 } else {
-                    console.warn('Advertencia: No se encontraron datos de usuario en SecureStore');
-                    alert('Error: No se encontraron datos de usuario.');
+                    console.error('Error: No se encontró el id del usuario en los datos de SecureStore');
+                    alert('Error: No se encontró el id del usuario en los datos.');
                     return;
                 }
-
+    
                 const currentDate = new Date().toISOString();
-
+    
                 const dataToSend = cleanData({
                     storeName,
                     description,
@@ -180,23 +179,23 @@ export default function RegisterSeller() {
                     createdAt: currentDate,
                     updatedAt: currentDate,
                 });
-
+    
                 const response = await axios.post(
                     'https://backend-j959.onrender.com/api/Seller/AddUSeller',
                     dataToSend,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': `Bearer ${token}`,  // Usamos el token aquí
                         },
                     }
                 );
-                
+    
                 const sellerData = response.data.seller;
                 console.log('Negocio registrado exitosamente:', response.data);
-
+    
                 // Guarda los datos de seller en SecureStore
                 await SecureStore.setItemAsync('sellerData', JSON.stringify(sellerData));
-
+    
                 router.push('/home');
             } catch (error) {
                 if (axios.isAxiosError(error)) {
@@ -210,6 +209,7 @@ export default function RegisterSeller() {
             alert('Debes aceptar los términos y condiciones para continuar.');
         }
     };
+    
 
 
 

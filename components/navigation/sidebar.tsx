@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 // Definición de las propiedades del componente
 interface SidebarProps {
@@ -12,6 +13,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const [isSeller, setIsSeller] = useState(false);
 
   // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
@@ -39,6 +41,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       router.push('/'); // Navegar a la pantalla de logout después del delay
     }, 300); // 300ms de delay para esperar el cierre del sidebar
   };
+
+  const fetchUserData = async () => {
+    try {
+      const userDataString = await SecureStore.getItemAsync('userData');
+      const userData = userDataString ? JSON.parse(userDataString) : null;
+
+      if (userData && userData.user) {
+        console.log('Datos del usuario:', userData);
+        setIsSeller(userData.user.isSeller || false); // Acceder correctamente a isSeller dentro de user
+      } else {
+        console.warn('No se encontraron datos de usuario en SecureStore');
+      }
+    } catch (error) {
+      console.error('Error al obtener los datos del usuario:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
