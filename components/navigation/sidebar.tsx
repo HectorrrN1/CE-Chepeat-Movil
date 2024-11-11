@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
     // Luego agrega un delay antes de redirigir a la pantalla de logout
     setTimeout(() => {
-      router.push('/'); // Navegar a la pantalla de logout después del delay
+      router.replace('/'); // Navegar a la pantalla de logout después del delay
     }, 300); // 300ms de delay para esperar el cierre del sidebar
   };
 
@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             style={styles.menuItem}
             onPress={() => {
               handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/profileSeller'), 300); // Esperar 300ms antes de redirigir
+              setTimeout(() => router.replace('/profileSeller'), 300); // Esperar 300ms antes de redirigir
             }}>
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText}>Mi cuenta</Text>
@@ -107,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             style={styles.menuItem}
             onPress={() => {
               handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/sellerProducts'), 300); // Esperar 300ms antes de redirigir
+              setTimeout(() => router.replace('/sellerProducts'), 300); // Esperar 300ms antes de redirigir
             }}>
             <Feather name="package" size={24} color="black" />
             <Text style={styles.menuItemText}>Mis productos</Text>
@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             style={styles.menuItem}
             onPress={() => {
               handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/homeBuyer'), 300); // Esperar 300ms antes de redirigir
+              setTimeout(() => router.replace('/homeBuyer'), 300); // Esperar 300ms antes de redirigir
             }}>
             <Feather name="shopping-bag" size={24} color="black" />
             <Text style={styles.menuItemText}>Modo comprador</Text>

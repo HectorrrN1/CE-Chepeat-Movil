@@ -244,7 +244,7 @@ export default function ProductManagement() {
 
         <Text style={styles.sectionTitle}>Solicitudes de Productos</Text>
         <View style={styles.productContainer}>
-          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+          <TouchableOpacity onPress={() => router.replace(`/userProfile`)} activeOpacity={1}>
             <View style={styles.sectionContainer}>
               <RequestItem name="Juan Pablo" time="Hace 2 horas" />
             </View>
