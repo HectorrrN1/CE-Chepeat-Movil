@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import { Icon } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import Carousel from 'react-native-snap-carousel';
@@ -15,6 +14,7 @@ import HeaderComponent from '@/components/navigation/headerComponent';
 import BottomBarComponent from '@/components/navigation/bottomComponent';
 import MenuBuyer from '@/components/navigation/menuBuyer';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 import { styles } from '@/assets/styles/homeBuyer.styles'; // Importa los estilos desde el archivo separado
 
@@ -94,41 +94,40 @@ export default function homeBuyer() {
       const token = await SecureStore.getItemAsync('userToken');
       const lat = latitude ? parseFloat(latitude.toString()) : null;
       const lon = longitude ? parseFloat(longitude.toString()) : null;
-
+  
       if (lat === null || lon === null) {
         Alert.alert('Error', 'No se pudo obtener la ubicación actual.');
         return;
       }
-
+  
       // Obtener productos cercanos
       const response = await axios.post(
         'https://backend-j959.onrender.com/api/Product/GetProductsByRadius',
         { latitude: lat, longitude: lon, radiusKm: 500 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       const productData = response.data.slice(0, 6);
-
+  
       // Obtener datos de vendedores para cada producto
       const productsWithSellerData = await Promise.all(
-        productData.map(async (product: Product) => {
+        productData.map(async (product: Product) => {  // Especificamos el tipo 'Product' aquí
           const sellerResponse = await axios.post(
             'https://backend-j959.onrender.com/api/Seller/SelectSellerById',
-            product.idSeller,  // El `idSeller` se envía en el cuerpo de la solicitud
+            product.idSeller,
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
           );
           return { ...product, sellerData: sellerResponse.data };
         })
       );
-
-
-
-      // Guardar datos en SecureStore
-      await SecureStore.setItemAsync('products', JSON.stringify(productsWithSellerData));
-
+      
+  
+      // Guardar datos en AsyncStorage
+      await AsyncStorage.setItem('products', JSON.stringify(productsWithSellerData));
+  
       // Mostrar productos en la consola para verificación
       console.log('Productos con datos del vendedor:', productsWithSellerData);
-
+  
       setProducts(productsWithSellerData);
     } catch (error) {
       if (error instanceof AxiosError) {
