@@ -297,7 +297,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
     paddingHorizontal: 5,
   },
   header: {

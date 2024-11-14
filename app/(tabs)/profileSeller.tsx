@@ -43,29 +43,12 @@ export default function ProfileScreen() {
               router.replace('/explore'); 
             }} 
           />
-          {/*
-          <MenuItem 
-            icon="shield" 
-            title="Políticas y privacidad" 
-            onPress={() => {
-              console.log('Navigating to Políticas y privacidad');
-              router.push('/explore'); 
-            }} 
-          />
-          <MenuItem 
-            icon="edit" 
-            title="Editar perfil" 
-            onPress={() => {
-              console.log('Navigating to Editar perfil');
-              router.push('/explore'); 
-            }} 
-          />*/}
           <MenuItem 
             icon="shopping-bag" 
             title="Modo comprador" 
             onPress={() => {
               console.log('Navigating to Modo comprador');
-              router.replace('/explore'); 
+              router.replace('/homeBuyer'); 
             }} 
           />
           <MenuItem 
@@ -96,8 +79,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white', // Fondo blanco
-    marginTop: 35,
+    backgroundColor: 'white',
   },
   scrollContent: {
     flexGrow: 1,

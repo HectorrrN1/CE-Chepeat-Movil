@@ -243,7 +243,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
   },
   header: {
     flexDirection: 'row',
@@ -285,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   productList: {
-    marginBottom: 50,
+    marginBottom: 0,
   },
   productItem: {
     flexDirection: 'row',
