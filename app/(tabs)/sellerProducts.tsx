@@ -210,13 +210,13 @@ export default function VendorProductList() {
       </ScrollView>
 
       <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => router.push('/home')}>
+        <TouchableOpacity onPress={() => router.replace('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
+        <TouchableOpacity onPress={() => router.replace('/sellerProducts')}>
           <Feather name="list" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/profileSeller')}>
+        <TouchableOpacity onPress={() => router.replace('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -352,10 +352,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingVertical: 10,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,

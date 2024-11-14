@@ -10,10 +10,38 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+interface SellerData {
+  fullname: string;
+  storeName: string;
+  isSeller: boolean;
+  isBuyer: boolean;
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const [sellerData, setSellerData] = useState<SellerData | null>(null);
   const [isSeller, setIsSeller] = useState(false);
+
+
+  useEffect(() => {
+    const loadSellerData = async () => {
+      try {
+        const storedSellerData = await SecureStore.getItemAsync('sellerData');
+        if (storedSellerData) {
+          const parsedData = JSON.parse(storedSellerData);
+          setSellerData(parsedData);
+          console.log("Datos cargados en Sidebar:", parsedData);
+        } else {
+          console.log("No se encontraron datos en SecureStore");
+        }
+      } catch (error) {
+        console.error("Error al cargar sellerData:", error);
+      }
+    };
+    
+    loadSellerData();
+  }, []);
 
   // Animar la rotación del ícono
   const rotateInterpolate = rotationAnim.interpolate({
@@ -74,12 +102,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       
       {/* Contenido del perfil y menú */}
       <View style={styles.contentContainer}>
-        <View style={styles.profileSection}>
+      <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>U</Text>
+            <Text style={styles.avatarText}>
+            {sellerData ? sellerData.storeName.charAt(0).toUpperCase() : 'U'}
+            </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
-          <Text style={styles.username}>Usuario</Text>
+          <Text style={styles.username}>
+          {sellerData ?.storeName}
+          </Text>
         </View>
 
         <View style={styles.menuItems}>
@@ -92,16 +124,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText}>Mi cuenta</Text>
           </TouchableOpacity>
-
-          {/*<TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              handleToggle(); // Cerrar sidebar primero
-              setTimeout(() => router.push('/politics'), 300); // Esperar 300ms antes de redirigir
-            }}>
-            <Feather name="file-text" size={24} color="black" />
-            <Text style={styles.menuItemText}>Términos y condiciones</Text>
-          </TouchableOpacity>*/}
 
           <TouchableOpacity
             style={styles.menuItem}

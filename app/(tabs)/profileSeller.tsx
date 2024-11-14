@@ -40,7 +40,7 @@ export default function ProfileScreen() {
             title="Mi información" 
             onPress={() => {
               console.log('Navigating to Mi información');
-              router.push('/explore'); 
+              router.replace('/explore'); 
             }} 
           />
           {/*
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
             title="Modo comprador" 
             onPress={() => {
               console.log('Navigating to Modo comprador');
-              router.push('/explore'); 
+              router.replace('/explore'); 
             }} 
           />
           <MenuItem 
@@ -73,19 +73,19 @@ export default function ProfileScreen() {
             title="Cerrar sesión" 
             onPress={() => {
               console.log('Logging out');
-              router.push('/'); 
+              router.replace('/'); 
             }} 
           />
         </View>
       </ScrollView>
       <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => router.push('/home')}>
+        <TouchableOpacity onPress={() => router.replace('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
+        <TouchableOpacity onPress={() => router.replace('/sellerProducts')}>
           <Feather name="list" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/profileSeller')}>
+        <TouchableOpacity onPress={() => router.replace('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>

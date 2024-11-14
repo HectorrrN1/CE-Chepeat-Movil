@@ -3,16 +3,28 @@ import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 
 interface menuBuyerProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
+interface UserData {
+  fullname: string;
+  isSeller: boolean;
+  isBuyer: boolean;
+}
+
 const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const [isSeller, setIsSeller] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+
+
+
 
   const rotateInterpolate = rotationAnim.interpolate({
     inputRange: [0, 1],
@@ -28,11 +40,50 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
     onToggle();
   };
 
-  const handleLogout = () => {
-    handleToggle();
-    setTimeout(() => {
-      router.push('/');
-    }, 300);
+  // Función para enviar el refreshToken y hacer logout
+  const logoutRequest = async () => {
+    try {
+      // Obtener el refreshToken almacenado
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      if (!refreshToken) {
+        throw new Error("Refresh token not found");
+      }
+
+      // Enviar el refreshToken al backend para hacer el logout
+      await axios.post('https://backend-j959.onrender.com/api/Auth/CerrarSesion', { refreshToken });
+
+      console.log('Se cerró la sesion');
+    } catch (error) {
+      console.error('Error al hacer logout:', error);
+      throw error; // Re-lanzar el error para que el handleLogout lo maneje
+    }
+  };
+
+  // Función para manejar el logout
+  const handleLogout = async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      if (!refreshToken) {
+        console.log('No se puede hacer logout: refreshToken no encontrado');
+        return; // Detener el flujo si no se encuentra el refreshToken
+      }
+
+      // Llamar a la función de logout
+      await logoutRequest();
+
+      // Eliminar los tokens y datos del usuario
+      await SecureStore.deleteItemAsync('userToken');
+      await SecureStore.deleteItemAsync('userData');
+      await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync('sellerData');
+
+      handleToggle(); // Si tienes un toggle para cambiar estado del UI
+      setTimeout(() => {
+        router.replace('/'); // Redirigir a la pantalla de login
+      }, 300);
+    } catch (error) {
+      console.error('Error al manejar el logout:', error);
+    }
   };
 
   const fetchUserData = async () => {
@@ -55,6 +106,37 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
     fetchUserData();
   }, []);
 
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const storedUserDataString = await SecureStore.getItemAsync('userData');
+
+        // Si no hay datos en SecureStore, salir de la función
+        if (!storedUserDataString) {
+          console.log("No se encontraron datos en SecureStore");
+          return;
+        }
+
+        // Intenta parsear los datos obtenidos
+        const storedUserData = JSON.parse(storedUserDataString);
+
+        // Verifica si el dato parseado tiene la estructura esperada
+        if (storedUserData && storedUserData.user) {
+          setUserData(storedUserData);
+          console.log("Datos cargados en menuBuyer:", storedUserData);
+        } else {
+          console.warn("La estructura de los datos no es la esperada:", storedUserData);
+        }
+      } catch (error) {
+        console.error("Error al cargar userData:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -68,11 +150,16 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
       <View style={styles.contentContainer}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>U</Text>
+            <Text style={styles.avatarText}>
+              {userData && userData.fullname ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+            </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
-          <Text style={styles.username}>Usuario</Text>
+          <Text style={styles.username}>
+            {userData && userData.fullname ? userData.fullname : 'Usuario'}
+          </Text>
         </View>
+
 
         <View style={styles.menuItems}>
           <TouchableOpacity

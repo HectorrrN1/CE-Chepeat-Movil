@@ -74,7 +74,7 @@ export default function LoginScreen() {
           await SecureStore.setItemAsync('userData', JSON.stringify(userData));
           await fetchUserData(); // Llama a fetchUserData después de guardar los datos
 
-          router.push('/homeBuyer');
+          router.replace('/homeBuyer');
         } else {
           setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
           setIsModalVisible(true);

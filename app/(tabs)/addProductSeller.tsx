@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
+import { router } from 'expo-router';
 
 export default function AddProductScreen() {
     const navigation = useNavigation(); // Usar el hook de navegación
@@ -96,7 +97,7 @@ export default function AddProductScreen() {
             Alert.alert('Éxito', 'Producto guardado con éxito');
     
             // Redirigir a la pantalla /sellerProducts
-            navigation.navigate('sellerProducts'); // Esto redirige a /sellerProducts
+            router.replace('/sellerProducts'); // Esto redirige a /sellerProducts
     
         } catch (error) {
             Alert.alert('Error', 'Hubo un problema al guardar el producto');
