@@ -56,7 +56,6 @@ export default function AddProductScreen() {
             Alert.alert('Error', 'Por favor completa todos los campos');
             return;
         }
-    
         try {
             // Obtener los datos de usuario almacenados en SecureStore
             const userDataString = await SecureStore.getItemAsync('userData');
@@ -65,17 +64,17 @@ export default function AddProductScreen() {
                 Alert.alert('Error', 'No se encontraron los datos del usuario.');
                 return;
             }
-    
-            // Parsear los datos de usuario para obtener el token
+
             const userData = JSON.parse(userDataString);
-            const token = userData.token;  // Aquí obtenemos el token desde userData
-    
+            const token = await SecureStore.getItemAsync('userToken');
+            console.log('Token obtenido:', token); // Verificar el valor del token
+
             if (!token) {
                 console.error('Error: No se encontró el token de usuario');
                 Alert.alert('Error', 'No se encontró el token de usuario.');
                 return;
             }
-    
+
             const response = await axios.post(
                 'https://backend-j959.onrender.com/api/Product/AddProduct',
                 {
@@ -90,21 +89,21 @@ export default function AddProductScreen() {
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,  // Usamos el token aquí
+                        'Content-Type': 'application/json',   // Agregamos Content-Type si es necesario
                     },
                 }
             );
-    
+
             Alert.alert('Éxito', 'Producto guardado con éxito');
-    
+
             // Redirigir a la pantalla /sellerProducts
             router.replace('/sellerProducts'); // Esto redirige a /sellerProducts
-    
+
         } catch (error) {
             Alert.alert('Error', 'Hubo un problema al guardar el producto');
             console.error(error);
         }
     };
-    
 
     const openImagePicker = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -235,7 +234,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
-        marginTop: 35,
     },
     scrollContent: {
         padding: 16,
@@ -305,10 +303,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9F9F9',
     },
     saveButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#ffc107',
         padding: 15,
-        borderRadius: 8,
-        margin: 16,
+        borderRadius: 25,
+        marginLeft: 25,  // Margen izquierdo
+        marginRight: 25, // Margen derecho
+        marginBottom: 25,  // Margen inferior
     },
     saveButtonText: {
         color: '#FFFFFF',

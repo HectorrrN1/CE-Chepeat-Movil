@@ -69,7 +69,7 @@ const filterProducts: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
         <HeaderComponent onMenuPress={openMenu} onFilterPress={() => router.push('/filterProducts')} />

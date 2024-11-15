@@ -56,7 +56,7 @@ export default function ProfileScreen() {
             title="Cerrar sesión" 
             onPress={() => {
               console.log('Logging out');
-              router.replace('/'); 
+              router.replace(''); 
             }} 
           />
         </View>

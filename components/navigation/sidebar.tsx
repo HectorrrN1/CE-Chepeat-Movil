@@ -66,18 +66,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
     // Luego agrega un delay antes de redirigir a la pantalla de logout
     setTimeout(() => {
-      router.replace('/'); // Navegar a la pantalla de logout después del delay
+      router.replace(''); // Navegar a la pantalla de logout después del delay
     }, 300); // 300ms de delay para esperar el cierre del sidebar
   };
 
-  const fetchUserData = async () => {
+  const fetchUserData = async () => { 
     try {
       const userDataString = await SecureStore.getItemAsync('userData');
       const userData = userDataString ? JSON.parse(userDataString) : null;
-
-      if (userData && userData.user) {
+  
+      // Asegúrate de que userData sea un objeto completo de usuario
+      if (userData) {
         console.log('Datos del usuario:', userData);
-        setIsSeller(userData.user.isSeller || false); // Acceder correctamente a isSeller dentro de user
+        setIsSeller(userData.isSeller || false); // Accede directamente a isSeller en userData
       } else {
         console.warn('No se encontraron datos de usuario en SecureStore');
       }
@@ -85,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       console.error('Error al obtener los datos del usuario:', error);
     }
   };
-
+  
   useEffect(() => {
     fetchUserData();
   }, []);

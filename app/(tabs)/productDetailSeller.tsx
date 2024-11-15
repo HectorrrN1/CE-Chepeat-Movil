@@ -1,86 +1,235 @@
-import React, { FC, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+} from 'react-native';
+import axios from 'axios';
+import Feather from 'react-native-vector-icons/Feather';
+import * as SecureStore from 'expo-secure-store';
 
-interface RequestItemProps {
-  name: string;
-  date: string;
-}
+export default function ProductDetailScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams(); // Obtiene el ID del producto desde los parámetros de la URL
+  const [product, setProduct] = useState<{
+    name: string;
+    description: string;
+    price: number;
+    stock: number;
+    measure: string;
+    imageUrl: string;
+  } | null>(null);
+  const [paymentReceived, setPaymentReceived] = useState(false);
 
-const RequestItem: FC<RequestItemProps> = ({ name, date }) => (
-  <View style={styles.requestItem}>
-    <Text style={styles.requestText}>Solicitud de {name} el {date}</Text>
-    <TouchableOpacity style={styles.viewMoreButton} onPress={() => router.push('/userProfile')}>
-      <Text style={styles.viewMoreText}>Ver más</Text>
-    </TouchableOpacity>
-  </View>
-);
+  // Función para alternar el estado del checkbox
+  const toggleCheckbox = (setChecked: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setChecked((prev) => !prev);
+  };
 
-const ProductDetailScreen: FC = () => {
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('userToken'); // Obtener el token guardado
+
+        console.log('Token:', token);  // Verifica si el token está presente
+
+        if (!token) {
+          console.error('No se encontró el token');
+          return;  // Si no hay token, no se hace la petición
+        }
+
+        const response = await axios.post('https://backend-j959.onrender.com/api/Product/GetProductById?id',
+          id,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,  // Usar el token en la cabecera
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        setProduct(response.data);  // Si la respuesta es exitosa, guardar los detalles del producto
+      } catch (error: unknown) {
+        // Verificación del tipo de error
+        if (axios.isAxiosError(error)) {
+          console.error('Error al obtener los detalles del producto:', error.response ? error.response.data : error.message);
+        } else {
+          console.error('Error desconocido:', error);
+        }
+      }
+    };
+
+    if (id) {
+      fetchProductDetails();
+    }
+  }, [id]);
+
+  if (!product) {
+    return <Text>Cargando detalles del producto...</Text>;  // Muestra mensaje mientras se carga el producto
+  }
+
+  const handleDeleteProduct = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('userToken'); // Obtener el token guardado
+
+      if (!token) {
+        console.error('No se encontró el token');
+        return; // Si no hay token, no se realiza la petición
+      }
+
+      const response = await axios.post(
+        'https://backend-j959.onrender.com/api/Product/DeleteProduct',
+        id, // Enviar el ID del producto en el cuerpo de la petición
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Usar el token en la cabecera
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        alert('Producto eliminado exitosamente');
+        router.push('/sellerProducts'); // Redireccionar después de la eliminación si es necesario
+      } else {
+        console.error('Error al eliminar el producto:', response.data);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error al eliminar el producto:', error.response ? error.response.data : error.message);
+      } else {
+        console.error('Error desconocido:', error);
+      }
+    }
+  };
+
+  const confirmDeleteProduct = () => {
+    Alert.alert(
+      'Confirmación de eliminación',
+      '¿Estás seguro de que deseas eliminar este producto?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Sí',
+          onPress: handleDeleteProduct,
+        },
+      ]
+    );
+  };
+
+  const handleUpdateProduct = () => {
+    router.push({
+      pathname: '/updateProductSeller', // Asegúrate de que esta ruta exista en tu configuración
+      params: {
+        id: id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        measure: product.measure,
+      },
+    });
+  };
+
   
-  const [paymentReceived, setPaymentReceived] = useState(false); // Mover el hook dentro del componente
 
-  const toggleCheckbox = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
-    setter(prev => !prev); // Alterna el valor booleano
+  // Método para obtener la fuente de la imagen
+  const getImageSource = (imageUrl: string | undefined) => {
+    // Si `imageUrl` está presente y no es una cadena vacía, la usa, de lo contrario, usa la imagen predeterminada
+    return imageUrl && imageUrl.trim() !== '' ? { uri: imageUrl } : require('../../assets/images/logo.png');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        <Image
-          source={require('@/assets/images/manzanas.jpg')} // Cambiado para cargar la imagen local
-          style={styles.productImage}
-        />
         <View style={styles.content}>
-          <Text style={styles.productName}>Manzanas Orgánicas</Text>
-          <Text style={styles.productPrice}>$4.99 por kilo</Text>
-          <Text style={styles.productDescription}>
-            Manzanas orgánicas recién recolectadas de granjas locales, perfectas para un snack saludable o para hornear.
-          </Text>
-          <View style={styles.deliveryContainer}>
-            <Text style={styles.deliveryTime}>
-              Tiempo Estimado de Entrega: 1-2 horas
-            </Text>
-          </View>
+          <Image source={getImageSource(product.imageUrl)} style={styles.productImage} />
+          <Text style={styles.productName}>{product.name}</Text>
+          <Text style={styles.productPrice}>${product.price} MXN</Text>
+          <Text style={styles.productDescription}>{product.description}</Text>
+          <Text style={styles.productStock}>Stock: {product.stock}</Text>
+          <Text style={styles.productMeasure}>Medida: {product.measure}</Text>
+
           <TouchableOpacity
             style={styles.checkboxContainer}
             onPress={() => toggleCheckbox(setPaymentReceived)}
           >
             <View style={styles.checkbox}>
-              {paymentReceived && <Feather name="check" size={24} color="#666" />}
+              {paymentReceived && (
+                <Feather name="check" size={24} color="#666" />
+              )}
             </View>
-            <Text style={styles.checkboxLabel}>Cumple con los Estándares de Calidad</Text>
+            <Text style={styles.checkboxLabel}>
+              Cumple con los Estándares de Calidad
+            </Text>
           </TouchableOpacity>
           <Text style={styles.requestsTitle}>Solicitudes del Producto</Text>
-          <RequestItem name="Diego Armando" date="10 de octubre de 2024" />
-          <RequestItem name="Alexis Santana" date="9 de octubre de 2024" />
-          <RequestItem name="Juan Pablo" date="8 de octubre de 2024" />
+
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Diego Armando" date="Hace 2 horas" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Alexis Santana" date="Hace 1 horas" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
+            <View style={styles.sectionContainer}>
+              <RequestItem name="Juan Pablo" date="Hace 30 minutos" />
+            </View>
+          </TouchableOpacity>
         </View>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={[styles.updateButton, styles.halfButton]} onPress={handleUpdateProduct}>
+            <Text style={styles.updateButtonText}>Modificar producto</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.deleteButton, styles.halfButton]} onPress={confirmDeleteProduct}>
+            <Text style={styles.deleteButtonText}>Eliminar producto</Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
+
       <View style={styles.navbar}>
         <TouchableOpacity onPress={() => router.push('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
-          <Feather name="search" size={24} color="#666" />
+          <Feather name="list" size={24} color="#666" />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => router.push('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-};
+}
 
+// Componente de ejemplo para una solicitud individual
+function RequestItem({ name, date }: { name: string; date: string }) {
+  return (
+    <View style={styles.requestItem}>
+      <Text style={styles.requestText}>{name}</Text>
+      <Text style={styles.requestText}>{date}</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
   },
   productImage: {
     width: '100%',
@@ -105,22 +254,31 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 10,
   },
+  productStock: { // Agregado
+    fontSize: 16,
+    color: '#000', // Puedes ajustar el color según tus preferencias
+    marginBottom: 10,
+  },
+  productMeasure: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 10,
+  },
   deliveryContainer: {
-    padding: 16, // Espacio interno del contenedor
-    borderWidth: 1, // Contorno del contenedor
-    borderColor: '#ccc', // Color del contorno
-    borderRadius: 25, // Bordes redondeados
-    backgroundColor: '#fff', // Fondo blanco para que la sombra se vea
-    shadowColor: '#000', // Color de la sombra
-    shadowOffset: { width: 0, height: 2 }, // Dirección de la sombra
-    shadowOpacity: 0.3, // Opacidad de la sombra
-    shadowRadius: 3, // Radio de desenfoque de la sombra
-    elevation: 4, // Para sombra en Android
-    marginVertical: 0, // Margen vertical para separar el contenedor
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
     marginBottom: 10,
   },
   deliveryTime: {
-    fontSize: 16, 
+    fontSize: 16,
     color: '#000',
   },
   requestsTitle: {
@@ -138,24 +296,6 @@ const styles = StyleSheet.create({
   requestText: {
     fontSize: 14,
     color: '#666',
-  },
-  viewMoreButton: {
-    backgroundColor: '#FF0000',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 25,
-  },
-  viewMoreText: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
   checkboxLabel: {
     fontSize: 16,
@@ -177,6 +317,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonRow: {
+    flexDirection: 'row', // Alinea los botones en una fila horizontal
+    justifyContent: 'space-between', // Espaciado uniforme entre los botones
+    marginHorizontal: 12, // Margen a los lados de la fila
+    bottom: 10, // Espacio desde el borde inferior
+    width: '94%', // Asegura que ocupe todo el ancho disponible
+  },
+  halfButton: {
+    flex: 1, // Cada botón ocupa la mitad del espacio disponible
+    marginHorizontal: 5, // Separación entre los botones
+  },
+  deleteButton: {
+    backgroundColor: '#DF1C24',
+    borderRadius: 25,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  updateButton: {
+    backgroundColor: '#E8AE1D',
+    borderRadius: 25,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  sectionContainer: {
+    marginBottom: 10,
+    padding: 15,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 15,
+    borderColor: '#7E7E7E',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  navbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
 });
 
-export default ProductDetailScreen;

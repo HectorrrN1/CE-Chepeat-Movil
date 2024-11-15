@@ -9,7 +9,7 @@ const BottomBarComponent: React.FC = () => {
   const pathname = usePathname(); // Obtiene la ruta actual
 
   const getIconColor = (routeName: string) => {
-    return pathname === routeName ? '#19376d' : 'gray';  // Cambia a color más oscuro si es la ruta activa
+    return pathname === routeName ? '#ff6e33' : 'gray';  // Cambia a color más oscuro si es la ruta activa
   };
 
   return (

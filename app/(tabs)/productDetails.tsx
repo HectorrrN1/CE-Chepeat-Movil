@@ -1,26 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { View, SafeAreaView, ScrollView, Text, Image, StyleSheet, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import CheckBox from 'expo-checkbox';
 import BottomBarComponent from '@/components/navigation/bottomComponent';
+
+// Definimos los tipos de los datos del producto
+type SellerData = {
+  storeName: string;
+  rating: number;
+  image: string;
+  latitude: number;
+  longitude: number;
+  street: string;
+  intNumber: number;
+  neighborhood: string;
+  city: string;
+  state: string;
+};
+
+type Product = {
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+  sellerData: SellerData;
+};
 
 type ImageSource = { uri: string } | null;
 
 const ProductDetails = () => {
+  const { name } = useLocalSearchParams();  // Obtener 'name' desde los parámetros de la URL
   const router = useRouter();
-  const { name, price, amount } = useLocalSearchParams();
+  const [product, setProduct] = useState<Product | null>(null);
   const [isChecked, setChecked] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const { image } = useLocalSearchParams();
   const [imageSource, setImageSource] = useState<ImageSource>(null);
 
+  // Función para normalizar el nombre (eliminar espacios extra)
+  const normalizeString = (str: string) => str.trim().replace(/\s+/g, '').toLowerCase();
+
   useEffect(() => {
-    if (typeof image === 'string' && image.startsWith('http')) {
-      setImageSource({ uri: image });
-    } else {
-      console.warn('No se pudo cargar la imagen. Verifica el valor del parámetro image:', image);
+    if (!name) {
+      console.warn('No se ha proporcionado un nombre para buscar en SecureStore.');
+      return;
     }
-  }, [image]);
+
+const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '');
+
+
+    const fetchProductDetails = async () => {
+      try {
+        const storedProducts = await SecureStore.getItemAsync('products');
+        if (storedProducts) {
+          const products: Product[] = JSON.parse(storedProducts);
+
+          const foundProduct = products.find((p) => normalizeString(p.name) === normalizedName);
+
+          if (foundProduct) {
+            setProduct(foundProduct);
+            if (foundProduct.image && foundProduct.image.startsWith('http')) {
+              setImageSource({ uri: foundProduct.image });
+            }
+          } else {
+            console.warn('Producto no encontrado en SecureStore. Nombre buscado:', normalizedName);
+          }
+        }
+      } catch (error) {
+        console.error('Error al obtener los detalles del producto:', error);
+      }
+    };
+
+    fetchProductDetails();
+  }, [name]);
 
   const handlePurchase = () => {
     setModalVisible(true);
@@ -37,18 +89,25 @@ const ProductDetails = () => {
   };
 
   const openMap = () => {
-    const destinationAddress = "Avenida Universidad Tecnológica, No. 1000, El Carmen, 42830 Hgo.";
+    if (product?.sellerData?.latitude && product?.sellerData?.longitude) {
+      const mapUrl = Platform.select({
+        ios: `maps://?daddr=${product.sellerData.latitude},${product.sellerData.longitude}`,
+        android: `google.navigation:q=${product.sellerData.latitude},${product.sellerData.longitude}`
+      });
 
-    // Detectar si es Android o iOS y construir la URL adecuada
-    const mapUrl = Platform.select({
-      ios: `maps://?daddr=${encodeURIComponent(destinationAddress)}`,  // URL para Apple Maps
-      android: `google.navigation:q=${encodeURIComponent(destinationAddress)}` // URL para Google Maps en Android
-    });
-
-    if (mapUrl) {
-      Linking.openURL(mapUrl).catch(err => console.error('Error al abrir el mapa:', err));
+      if (mapUrl) {
+        Linking.openURL(mapUrl).catch(err => console.error('Error al abrir el mapa:', err));
+      }
     }
   };
+
+  if (!product) {
+    return (
+      <View style={styles.container}>
+        <Text>Producto no encontrado.</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,15 +118,29 @@ const ProductDetails = () => {
           <Text style={styles.errorText}>Imagen no disponible</Text>
         )}
 
-        <Text style={styles.productName}>{name}</Text>
-        <Text style={styles.productPrice}>${price}</Text>
-        <Text style={styles.productDescription}>{amount} rollos de sushi variados</Text>
+        <Text style={styles.productName}>{product.name}</Text>
+        <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
+        <Text style={styles.productDescription}>{product.description}</Text>
 
         <View style={styles.detailsContainer}>
-          <Text style={styles.detailsText}>Dirección</Text>
-          <Text style={styles.detailsValue}>Avenida Universidad Tecnológica, No. 1000, El Carmen, 42830 Hgo.</Text>
-          <Text style={styles.detailsText}>Hora de entrega</Text>
-          <Text style={styles.detailsValue}>11:30 p.m.</Text>
+          <TouchableOpacity onPress={openMap}>
+            <Text style={styles.detailsText}>Dirección</Text>
+            
+            <Text style={styles.detailsValue}>
+              {product.sellerData.street}, {product.sellerData.intNumber}, {product.sellerData.city}, {product.sellerData.state}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sellerCard}>
+          <Image
+            source={{ uri: product.sellerData.image || 'https://via.placeholder.com/50' }}
+            style={styles.sellerIcon}
+          />
+          <View>
+            <Text style={styles.sellerName}>{product.sellerData.storeName}</Text>
+            <Text style={styles.sellerRating}>⭐ {product.sellerData.rating}</Text>
+          </View>
         </View>
 
         <View style={styles.checkboxContainer}>
@@ -79,29 +152,11 @@ const ProductDetails = () => {
           <Text style={styles.checkboxText}>Estoy de acuerdo con las condiciones del producto</Text>
         </View>
 
-        {/* Botón para iniciar la ruta de viaje */}
-        <TouchableOpacity style={styles.mapButton} onPress={openMap}>
-          <Text style={styles.buttonText}>Iniciar ruta de viaje</Text>
-        </TouchableOpacity>
 
-        {/* Card del vendedor */}
-        <View style={styles.sellerCard}>
-          <Image
-            source={{ uri: 'https://via.placeholder.com/50' }}
-            style={styles.sellerIcon}
-          />
-          <View>
-            <Text style={styles.sellerName}>Diego Armando</Text>
-            <Text style={styles.sellerRating}>⭐ 4.9</Text>
-          </View>
-        </View>
-
-        {/* Botón de compra */}
         <TouchableOpacity style={styles.purchaseButton} onPress={handlePurchase}>
           <Text style={styles.buttonText}>Comprar</Text>
         </TouchableOpacity>
 
-        {/* Modal de confirmación */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -111,7 +166,7 @@ const ProductDetails = () => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalText}>¿Estás seguro de que deseas realizar la compra?</Text>
-              <Text style={styles.modalPrice}>Total: ${price}</Text>
+              <Text style={styles.modalPrice}>Total: ${product.price.toFixed(2)}</Text>
 
               <View style={styles.modalButtonContainer}>
                 <TouchableOpacity style={styles.cancelButton} onPress={cancelPurchase}>

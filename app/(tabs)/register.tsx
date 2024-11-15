@@ -62,7 +62,7 @@ export default function Register() {
   
         // Maneja la respuesta de la API según sea necesario
         console.log('Usuario registrado exitosamente:', response.data);
-        router.push('/'); // Redirige a la página de inicio de sesión después del registro exitoso
+        router.push(''); // Redirige a la página de inicio de sesión después del registro exitoso
   
       } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -82,7 +82,7 @@ export default function Register() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -169,7 +169,7 @@ export default function Register() {
 
           <View style={styles.formContainer}>
             <Text style={styles.formText}>
-              ¿Ya tienes cuenta? <Text style={styles.link} onPress={() => router.push('/')}>Inicia sesión</Text>
+              ¿Ya tienes cuenta? <Text style={styles.link} onPress={() => router.push('')}>Inicia sesión</Text>
             </Text>
           </View>
         </ScrollView>

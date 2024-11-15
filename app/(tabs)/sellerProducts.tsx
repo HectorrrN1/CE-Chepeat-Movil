@@ -5,12 +5,13 @@ import { useRouter } from 'expo-router';
 import Sidebar from '@/components/navigation/sidebar';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import { Double } from 'react-native/Libraries/Types/CodegenTypes';
 
 // Define la interfaz para los props del componente
 interface ProductItemProps {
   name: string;
   description: string;
-  price: number;
+  price: Double;
   stock: number;
   measure: string;
   imageUrl: string;
@@ -23,9 +24,9 @@ const ProductItem: FC<ProductItemProps> = ({ name, description, price, stock, me
     <View style={styles.productInfo}>
       <Text style={styles.productName}>{name}</Text>
       <Text style={styles.productDescription}>{description}</Text>
-      <Text style={styles.productPrice}>${price} por {measure}</Text>
+      <Text style={styles.productPrice}>${price} MXN</Text>
       <Text style={[styles.productStock, stock > 0 ? styles.inStock : styles.outOfStock]}>
-        {stock > 0 ? `${stock} en stock` : 'Sin Stock'}
+        {stock > 0 ? `${stock} ${measure}` : 'Sin Stock'}
       </Text>
     </View>
   </View>
@@ -64,30 +65,30 @@ export default function VendorProductList() {
 
   const obtenerDatosVendedor = async () => {
     try {
-      // Obtener el userData almacenado en SecureStore
+      // Obtener el token y los datos de usuario almacenados en SecureStore
+      const token = await SecureStore.getItemAsync('userToken');
       const userDataString = await SecureStore.getItemAsync('userData');
-  
-      if (!userDataString) {
-        console.error('Error: No se encontraron los datos del usuario');
-        alert('Error: No se encontraron los datos del usuario.');
+
+      if (!token || !userDataString) {
+        console.error('Error: No se encontraron los datos de autenticación o del usuario');
+        alert('Error: No se encontraron los datos de autenticación o del usuario.');
         return null;
       }
-  
-      // Parsear los datos de usuario para obtener el token y idUser
+
+      // Parsear los datos de usuario para obtener el idUser
       const userData = JSON.parse(userDataString);
-      const token = userData.token; // Aquí obtienes el token directamente del objeto userData
-      const idUser = userData.user.id;
-  
-      if (!token || !idUser) {
-        console.error('Error: No se encontró el token o idUser');
-        alert('Error: No se encontró el token o idUser.');
+      const idUser = userData.id;  // Aquí se obtiene el ID directamente del objeto userData
+
+      if (!idUser) {
+        console.error('Error: No se encontró el idUser');
+        alert('Error: No se encontró el idUser.');
         return null;
       }
-  
+
       // Hacer la petición a SelectSellerByIdUser
       const sellerResponse = await axios.post(
         'https://backend-j959.onrender.com/api/seller/SelectSellerByIdUser',
-        idUser,  // Enviar el idUser como parte del cuerpo
+        idUser,  // Enviar el idUser como parte del cuerpo en un objeto
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -95,70 +96,80 @@ export default function VendorProductList() {
           },
         }
       );
-  
+
       // Guardar los datos del vendedor en SecureStore como sellerData
       const sellerData = sellerResponse.data;
       await SecureStore.setItemAsync('sellerData', JSON.stringify(sellerData));
       console.log('Datos del vendedor guardados:', sellerData);
-  
+
       return sellerData; // Devolver los datos del vendedor para usarlos en la siguiente función
-    } catch (error: any) {
-      console.error('Error al obtener los datos del vendedor:', error.response?.data || error.message);
+    } catch (error: unknown) {  // Especificar que error es de tipo unknown
+      if (axios.isAxiosError(error)) {  // Comprobar si el error es de tipo AxiosError
+        console.error('Error al obtener los datos del vendedor:', error.response?.data || error.message);
+      } else {
+        console.error('Error inesperado:', error);
+      }
       alert('Error al obtener los datos del vendedor');
       return null;
     }
   };
-  
-  
+
   const fetchProductsBySellerId = async (sellerId: string) => {
     try {
-      // Obtener los datos de usuario almacenados en SecureStore
+      // Obtener el token y los datos de usuario almacenados en SecureStore
+      const token = await SecureStore.getItemAsync('userToken');
       const userDataString = await SecureStore.getItemAsync('userData');
-  
-      if (!userDataString) {
-        console.error('Error: No se encontraron los datos del usuario');
-        alert('Error: No se encontraron los datos del usuario.');
+
+      if (!token || !userDataString) {
+        console.error('Error: No se encontraron los datos de autenticación o del usuario');
+        alert('Error: No se encontraron los datos de autenticación o del usuario.');
         return;
       }
-  
-      // Parsear los datos de usuario para obtener el token
+
+      // Parsear los datos de usuario
       const userData = JSON.parse(userDataString);
-      const token = userData.token; // Aquí obtenemos el token desde userData
-  
-      if (!token) {
-        console.error('Error: No se encontró el token de usuario');
-        alert('Error: No se encontró el token de usuario.');
+
+      // Asegurarnos de que el userData tenga la estructura correcta
+      const sellerIdFromUserData = userData.id;  // Usamos el id de userData si es necesario
+
+      if (!sellerIdFromUserData) {
+        console.error('Error: No se encontró el sellerId del usuario');
+        alert('Error: No se encontró el sellerId del usuario.');
         return;
       }
-  
+
       console.log('ID del vendedor para obtener productos:', sellerId);
-  
+
       // Petición para obtener productos por ID del vendedor
       const response = await axios.post(
         'https://backend-j959.onrender.com/api/Product/GetProductsByIdSeller',
-        sellerId,  // Pasamos sellerId en el cuerpo de la solicitud
+        sellerId,  // Enviar el sellerId como un objeto
         {
           headers: {
-            'Authorization': `Bearer ${token}`,  // Usamos el token aquí
+            'Authorization': `Bearer ${token}`,  // Usar el token en la cabecera
             'Content-Type': 'application/json',
           },
         }
       );
-  
+
       if (response.status === 200) {
         console.log('Productos obtenidos exitosamente:', response.data);
         // Asignar los productos al estado o procesamiento necesario
-        setProducts(response.data); // Directamente asignar el arreglo de productos
+        setProducts(response.data);  // Aquí deberías actualizar el estado con los productos obtenidos
       } else {
         console.error('Error en la respuesta:', response);
         alert('Error al obtener los productos');
       }
-    } catch (error: any) {
-      console.error('Error en la respuesta de la API:', error.response?.data || error.message);
+    } catch (error: unknown) {  // Especificamos que el error es de tipo unknown
+      if (axios.isAxiosError(error)) {  // Comprobamos si el error es un AxiosError
+        console.error('Error en la respuesta de la API:', error.response?.data || error.message);
+      } else {
+        console.error('Error inesperado:', error);
+      }
       alert('Error en la solicitud a la API');
     }
   };
-  
+
   useEffect(() => {
     const obtenerDatosYProductos = async () => {
       const sellerData = await obtenerDatosVendedor(); // Paso 1: Obtener los datos del vendedor
@@ -166,9 +177,15 @@ export default function VendorProductList() {
         await fetchProductsBySellerId(sellerData.id); // Paso 2: Obtener los productos usando el ID del vendedor
       }
     };
-  
+
     obtenerDatosYProductos();
   }, []);
+
+  // Método para obtener la fuente de la imagen
+  const getImageSource = (imageUrl: string | undefined) => {
+    // Si `imageUrl` está presente y no es una cadena vacía, la usa, de lo contrario, usa la imagen predeterminada
+    return imageUrl && imageUrl.trim() !== '' ? { uri: imageUrl } : require('../../assets/images/logo.png');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -194,9 +211,13 @@ export default function VendorProductList() {
       <ScrollView style={styles.productList}>
         {products && products.length > 0 ? (
           products.map((product: any) => (
-            <TouchableOpacity key={product.id} onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+            <TouchableOpacity
+              key={product.id}
+              onPress={() => router.push(`/productDetailSeller?id=${product.id}`)} // Redirige con el ID del producto
+              activeOpacity={1}
+            >
               <View style={styles.productItemContainer}>
-                <Image source={{ uri: product.imageUrl || 'default-image-url' }} style={styles.productImage} />
+              <Image source={getImageSource(product.imageUrl)} style={styles.productImage} />
                 <View style={styles.productTextContainer}>
                   <Text style={styles.productName}>{product.name}</Text>
                   <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
@@ -205,7 +226,7 @@ export default function VendorProductList() {
             </TouchableOpacity>
           ))
         ) : (
-          <Text style={styles.noProductsText}>Aun no ha agregado productos a vender</Text>
+          <Text style={styles.noProductsText}>Aún no ha agregado productos a vender</Text>
         )}
       </ScrollView>
 
@@ -342,9 +363,9 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   noProductsText: {
-    marginHorizontal: 20, 
-    marginVertical: 10, 
-    fontSize: 16, 
+    marginHorizontal: 20,
+    marginVertical: 10,
+    fontSize: 16,
     color: '#666',
   },
   navbar: {

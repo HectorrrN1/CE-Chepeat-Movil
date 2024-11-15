@@ -1,4 +1,3 @@
-// Importar React y SecureStore
 import React, { useState } from 'react';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -6,14 +5,14 @@ import { Button } from '@/components/ui/Button';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from 'expo-secure-store'; // Importar SecureStore
 import styles from '@/assets/styles/index.styles';
 
-const StyledInput = ({ ...props }) => {
+const StyledInput: React.FC<TextInput['props']> = ({ style, ...props }) => {
   return (
     <View style={styles.inputContainer}>
       <TextInput
-        style={[styles.input]}
+        style={[styles.input, style]}
         placeholderTextColor="#999"
         {...props}
       />
@@ -28,7 +27,7 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [modalMessage, setModalMessage] = useState(''); // Nuevo estado para el mensaje del modal
 
   const router = useRouter();
 
@@ -65,23 +64,26 @@ export default function LoginScreen() {
         });
 
         if (response.data.numError === 1 && response.data.token) {
-          const userData = {
-            token: response.data.token,
-            refreshToken: response.data.refreshToken,
-            user: response.data.user
-          };
+          //Si el login es exitoso, se guarda el JWT Y 
+          // los datos del usuario en SecureStore
+          const token = response.data.token;
+          const refreshToken = response.data.refreshToken;
+          const userData = response.data.user;
 
+          await SecureStore.setItemAsync('userToken', token);
+          await SecureStore.setItemAsync('refreshToken', refreshToken);
           await SecureStore.setItemAsync('userData', JSON.stringify(userData));
-          await fetchUserData(); // Llama a fetchUserData después de guardar los datos
+          await fetchUserData();
+
 
           router.replace('/homeBuyer');
         } else {
           setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
           setIsModalVisible(true);
         }
-
       } catch (error) {
-        setModalMessage('Error al intentar iniciar sesión. Por favor, verifica tu conexión o credenciales.');
+        console.error('Error al realizar la solicitud: ', error);
+        setModalMessage('Error al intentar iniciar sesión, verifica tu conexión o credenciales. ');
         setIsModalVisible(true);
       }
     }
@@ -107,24 +109,53 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'android' || Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
           <View style={styles.logoContainer}>
-            <Image source={require('@/assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Bienvenido a Chepeat</Text>
           </View>
           <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
 
+          {/* Correo Electrónico */}
           <Text style={styles.text}>Correo Electrónico</Text>
-          <StyledInput placeholder="Correo Electrónico" value={email} onChangeText={setEmail} onBlur={validateEmail} keyboardType="email-address" autoCapitalize="none" style={styles.inputStyle} />
+          <StyledInput
+            placeholder="Correo Electrónico"
+            value={email}
+            onChangeText={setEmail}
+            onBlur={validateEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.inputStyle}
+          />
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
+          {/* Contraseña */}
           <Text style={styles.text}>Contraseña</Text>
           <View style={styles.passwordContainer}>
-            <StyledInput placeholder="Contraseña" value={password} onChangeText={setPassword} onBlur={validatePassword} secureTextEntry={!showPassword} style={styles.inputStyle} />
-            <TouchableOpacity style={styles.iconContainer} onPress={() => setShowPassword(!showPassword)}>
+            <StyledInput
+              placeholder="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              onBlur={validatePassword}
+              secureTextEntry={!showPassword}
+              style={styles.inputStyle}
+            />
+            <TouchableOpacity
+              style={styles.iconContainer}
+              onPress={() => setShowPassword(!showPassword)}
+            >
               <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
             </TouchableOpacity>
           </View>
@@ -133,15 +164,24 @@ export default function LoginScreen() {
           <Button title="Iniciar sesión" onPress={handleLogin} style={styles.Button} />
 
           <Text style={styles.forgotPassword}>
-            <Text onPress={() => router.push('/')}>¿Olvidaste tu contraseña?</Text>
+            <Text onPress={() => router.push('')}>¿Olvidaste tu contraseña?</Text>
           </Text>
 
-          <Modal animationType="slide" transparent={true} visible={isModalVisible} onRequestClose={() => setIsModalVisible(false)}>
+          {/* Modal de alerta */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isModalVisible}
+            onRequestClose={() => setIsModalVisible(false)}
+          >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalText}>{modalMessage}</Text>
                 <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setIsModalVisible(false)}
+                  >
                     <Text style={styles.buttonText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
@@ -149,15 +189,21 @@ export default function LoginScreen() {
             </View>
           </Modal>
 
+          {/* Divisor con "O" */}
           <View style={styles.dividerContainer}>
             <View style={styles.line} />
             <Text style={styles.dividerText}>O</Text>
             <View style={styles.line} />
           </View>
 
+          {/* Crear Cuenta */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>¿No tienes cuenta? Regístrate ahora</Text>
-            <Button title="Crear Cuenta" onPress={() => router.push('/register')} style={styles.Button} />
+            <Button
+              title="Crear Cuenta"
+              onPress={() => router.push('/register')}
+              style={styles.Button}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

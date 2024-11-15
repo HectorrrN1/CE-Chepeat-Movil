@@ -1,14 +1,9 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-
-interface menuBuyerProps {
-  isOpen: boolean;
-  onToggle: () => void;
-}
 
 interface UserData {
   fullname: string;
@@ -16,15 +11,26 @@ interface UserData {
   isBuyer: boolean;
 }
 
-const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
+interface MenuBuyerProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
-  const [isSeller, setIsSeller] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
 
-
-
-
+  useEffect(() => {
+    const loadUserData = async () => {
+      const storedUserData = await SecureStore.getItemAsync('userData');
+      if (storedUserData) {
+        const parsedData = JSON.parse(storedUserData);
+        setUserData(parsedData);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const rotateInterpolate = rotationAnim.interpolate({
     inputRange: [0, 1],
@@ -79,10 +85,19 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
 
       handleToggle(); // Si tienes un toggle para cambiar estado del UI
       setTimeout(() => {
-        router.replace('/'); // Redirigir a la pantalla de login
+        router.push(''); // Redirigir a la pantalla de login
       }, 300);
     } catch (error) {
       console.error('Error al manejar el logout:', error);
+    }
+  };
+
+
+  const handleBecomeSeller = () => {
+    if (userData?.isSeller) {
+      router.push('/home'); // Si ya es vendedor, ir a homeBuyer
+    } else {
+      router.push('/registerSeller'); // Si no es vendedor, ir a registerSeller
     }
   };
 
@@ -91,9 +106,9 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
       const userDataString = await SecureStore.getItemAsync('userData');
       const userData = userDataString ? JSON.parse(userDataString) : null;
 
-      if (userData && userData.user) {
+      if (userData) {
         console.log('Datos del usuario:', userData);
-        setIsSeller(userData.user.isSeller || false); // Acceder correctamente a isSeller dentro de user
+        // Aquí puedes usar userData para realizar acciones adicionales
       } else {
         console.warn('No se encontraron datos de usuario en SecureStore');
       }
@@ -105,37 +120,6 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
   useEffect(() => {
     fetchUserData();
   }, []);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const storedUserDataString = await SecureStore.getItemAsync('userData');
-
-        // Si no hay datos en SecureStore, salir de la función
-        if (!storedUserDataString) {
-          console.log("No se encontraron datos en SecureStore");
-          return;
-        }
-
-        // Intenta parsear los datos obtenidos
-        const storedUserData = JSON.parse(storedUserDataString);
-
-        // Verifica si el dato parseado tiene la estructura esperada
-        if (storedUserData && storedUserData.user) {
-          setUserData(storedUserData);
-          console.log("Datos cargados en menuBuyer:", storedUserData);
-        } else {
-          console.warn("La estructura de los datos no es la esperada:", storedUserData);
-        }
-      } catch (error) {
-        console.error("Error al cargar userData:", error);
-      }
-    };
-
-    loadUserData();
-  }, []);
-
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -151,12 +135,12 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {userData && userData.fullname ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+              {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
             </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
           <Text style={styles.username}>
-            {userData && userData.fullname ? userData.fullname : 'Usuario'}
+            {userData ? userData.fullname : 'Cargando...'}
           </Text>
         </View>
 
@@ -165,18 +149,8 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {
-              handleToggle();
-              setTimeout(() => router.push('/filterProducts'), 300);
-            }}>
-            <Feather name="search" size={24} color="black" />
-            <Text style={styles.menuItemText}>Buscar comida</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              handleToggle();
-              setTimeout(() => router.push('/profileBuyer'), 300);
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/profileBuyer'), 300); // Esperar 300ms antes de redirigir
             }}>
             <Feather name="user" size={24} color="black" />
             <Text style={styles.menuItemText}>Mi cuenta</Text>
@@ -185,27 +159,28 @@ const menuBuyer: React.FC<menuBuyerProps> = ({ isOpen, onToggle }) => {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {
-              handleToggle();
-              setTimeout(() => {
-                if (isSeller) {
-                  router.push('/home'); // Si es vendedor, ir a /home
-                } else {
-                  router.push('/registerSeller'); // Si no es vendedor, ir a /registerSeller
-                }
-              }, 300);
-            }}
-          >
-            <Feather name="tag" size={24} color="black" />
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/profileSeller'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="user" size={24} color="black" />
+            <Text style={styles.menuItemText}>Mi cuenta</Text>
+          </TouchableOpacity>
+
+          {/* Botón único "Quiero ser vendedor" */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => handleBecomeSeller(), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="user-check" size={24} color="black" />
             <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.logoutContainer}>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
@@ -231,18 +206,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#E0E0E0',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ff6e33',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: 'black',
+    color: 'white',
   },
   greeting: {
     fontSize: 16,
@@ -289,4 +264,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default menuBuyer;
+export default MenuBuyer;
