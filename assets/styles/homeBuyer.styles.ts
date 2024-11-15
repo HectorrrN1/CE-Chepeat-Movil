@@ -7,7 +7,6 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -37,6 +36,7 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 20,
   },
+
   inputContainer: {
     flexDirection: 'row',
     borderWidth: 1,
@@ -49,13 +49,17 @@ export const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 15,
   },
+
   searchIcon: {
-    marginRight: 10,
+    paddingLeft: 10,
   },
+
   input: {
     fontSize: 16,
     color: '#333',
     flex: 1,
+    paddingVertical: 0,  // Elimina cualquier espaciado vertical innecesario
+    paddingLeft: 10,     // Alineación a la izquierda para el texto
   },
   mapContainer: {
     width: '100%',
@@ -174,4 +178,11 @@ export const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
+  noProductsText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+
 });

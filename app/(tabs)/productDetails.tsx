@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, SafeAreaView, ScrollView, Text, Image, StyleSheet, TouchableOpacity, Modal, Linking, Platform } from 'react-native';
+import {
+  View, SafeAreaView, ScrollView, Text, Image,
+  TouchableOpacity, Modal, Linking, Platform
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import CheckBox from 'expo-checkbox';
 import BottomBarComponent from '@/components/navigation/bottomComponent';
+import styles from '@/assets/styles/productDetails';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+
 
 // Definimos los tipos de los datos del producto
 type SellerData = {
@@ -20,6 +26,7 @@ type SellerData = {
 };
 
 type Product = {
+  id: string,
   name: string;
   price: number;
   description: string;
@@ -46,7 +53,7 @@ const ProductDetails = () => {
       return;
     }
 
-const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '');
+    const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '');
 
 
     const fetchProductDetails = async () => {
@@ -82,10 +89,54 @@ const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '
     setModalVisible(false);
   };
 
-  const confirmPurchase = () => {
+  const confirmPurchase = async () => {
+    console.log("confirmPurchase fue llamado");
     setModalVisible(false);
-    router.push('/confirmBuy');
-    console.log('Compra confirmada');
+
+    try {
+      const token = await SecureStore.getItemAsync('userToken');
+      if (!token) {
+        console.warn('Token no encontrado');
+        return;
+      }
+
+      const userDataString = await SecureStore.getItemAsync('userData');
+      if (!userDataString) {
+        console.warn('Datos del usuario no encontrados');
+        return;
+      }
+
+      const userData = JSON.parse(userDataString);
+      const idBuyer = userData.id; // Ajusta según la estructura real de `userData`
+
+      const purchaseRequest = {
+        idProduct: product?.id,
+        idBuyer: idBuyer,
+      };
+
+      const response = await axios.post(
+        'https://backend-j959.onrender.com/api/PurchaseRequest/Create',
+        purchaseRequest,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log('Respuesta de la API:', response.data);
+
+      router.push('/confirmBuy');
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        // Si el error es de tipo AxiosError, accedemos a `error.response.data`
+        console.error('Error al hacer la solicitud de compra:', error.response?.data || error.message);
+      } else {
+        // Si no es un error de Axios, mostramos el error genérico
+        console.error('Error inesperado:', error);
+      }
+    }
   };
 
   const openMap = () => {
@@ -125,7 +176,7 @@ const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '
         <View style={styles.detailsContainer}>
           <TouchableOpacity onPress={openMap}>
             <Text style={styles.detailsText}>Dirección</Text>
-            
+
             <Text style={styles.detailsValue}>
               {product.sellerData.street}, {product.sellerData.intNumber}, {product.sellerData.city}, {product.sellerData.state}
             </Text>
@@ -184,160 +235,5 @@ const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    marginTop: 35,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  productImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  productName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  productPrice: {
-    fontSize: 20,
-    color: '#df1c24',
-    marginBottom: 20,
-  },
-  productDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-  },
-  detailsContainer: {
-    backgroundColor: '#df1c24',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  detailsText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  detailsValue: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 10,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  checkboxText: {
-    marginLeft: 10,
-    fontSize: 14,
-    color: '#666',
-  },
-  purchaseButton: {
-    backgroundColor: '#df1c24',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    fontSize: 16,
-    color: 'red',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro semi-transparente
-  },
-  modalContainer: {
-    width: 300,
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  modalPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#df1c24',
-    marginBottom: 20,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: '#666',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginRight: 10,
-    flex: 1,
-    alignItems: 'center',
-  },
-  confirmButton: {
-    backgroundColor: '#df1c24',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: 'center',
-  },
-  sellerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f1f1f1',
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  sellerIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  sellerName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  sellerRating: {
-    color: '#666',
-    fontSize: 14,
-  },
-  mapButton: {
-    backgroundColor: '#1c88df', // Color diferente para el botón del mapa
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-});
 
 export default ProductDetails;

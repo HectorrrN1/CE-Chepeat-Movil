@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter, usePathname  } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-
 interface UserData {
   fullname: string;
   isSeller: boolean;
@@ -19,6 +18,7 @@ interface MenuBuyerProps {
 const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
   const rotationAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const pathname = usePathname(); // Obtén la ruta actual
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
@@ -46,58 +46,49 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
     onToggle();
   };
 
-  // Función para enviar el refreshToken y hacer logout
-const logoutRequest = async () => {
-  try {
-    // Obtener el refreshToken almacenado
-    const refreshToken = await SecureStore.getItemAsync('refreshToken');
-    if (!refreshToken) {
-      throw new Error("Refresh token not found");
+  const logoutRequest = async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      if (!refreshToken) {
+        throw new Error("Refresh token not found");
+      }
+
+      await axios.post('https://backend-j959.onrender.com/api/Auth/CerrarSesion', { refreshToken });
+      console.log('Se cerró la sesion');
+    } catch (error) {
+      console.error('Error al hacer logout:', error);
+      throw error;
     }
+  };
 
-    // Enviar el refreshToken al backend para hacer el logout
-    await axios.post('https://backend-j959.onrender.com/api/Auth/CerrarSesion', { refreshToken });
+  const handleLogout = async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      if (!refreshToken) {
+        console.log('No se puede hacer logout: refreshToken no encontrado');
+        return;
+      }
 
-    console.log('Se cerró la sesion');
-  } catch (error) {
-    console.error('Error al hacer logout:', error);
-    throw error; // Re-lanzar el error para que el handleLogout lo maneje
-  }
-};
+      await logoutRequest();
+      await SecureStore.deleteItemAsync('userToken');
+      await SecureStore.deleteItemAsync('userData');
+      await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync('sellerData');
 
-// Función para manejar el logout
-const handleLogout = async () => {
-  try {
-    const refreshToken = await SecureStore.getItemAsync('refreshToken');
-    if (!refreshToken) {
-      console.log('No se puede hacer logout: refreshToken no encontrado');
-      return; // Detener el flujo si no se encuentra el refreshToken
+      handleToggle();
+      setTimeout(() => {
+        router.push('/');
+      }, 300);
+    } catch (error) {
+      console.error('Error al manejar el logout:', error);
     }
-
-    // Llamar a la función de logout
-    await logoutRequest(); 
-    
-    // Eliminar los tokens y datos del usuario
-    await SecureStore.deleteItemAsync('userToken');
-    await SecureStore.deleteItemAsync('userData');
-    await SecureStore.deleteItemAsync('refreshToken');
-    await SecureStore.deleteItemAsync('sellerData');
-
-    handleToggle(); // Si tienes un toggle para cambiar estado del UI
-    setTimeout(() => {
-      router.push('/'); // Redirigir a la pantalla de login
-    }, 300);
-  } catch (error) {
-    console.error('Error al manejar el logout:', error);
-  }
-};
-
+  };
 
   const handleBecomeSeller = () => {
     if (userData?.isSeller) {
-      router.push('/home'); // Si ya es vendedor, ir a homeBuyer
+      router.push('/home');
     } else {
-      router.push('/registerSeller'); // Si no es vendedor, ir a registerSeller
+      router.push('/registerSeller');
     }
   };
 
@@ -125,19 +116,34 @@ const handleLogout = async () => {
         </View>
 
         <View style={styles.menuItems}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Feather name="search" size={24} color="black" />
-            <Text style={styles.menuItemText}>Buscar comida</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profileBuyer')}>
-            <Feather name="user" size={24} color="black" />
-            <Text style={styles.menuItemText}>Mi cuenta</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/filterProducts')}
+            disabled={pathname === '/filterProducts'} // Deshabilita si ya estás en esta vista
+          >
+            <Feather name="search" size={24} color={pathname === '/filterProducts' ? '#ccc' : 'black'} />
+            <Text style={[styles.menuItemText, pathname === '/filterProducts' && { color: '#ccc' }]}>Buscar comida</Text>
+            <Ionicons name="chevron-forward" size={24} color={pathname === '/searchFood' ? '#ccc' : 'black'} />
           </TouchableOpacity>
 
-          {/* Botón único "Quiero ser vendedor" */}
-          <TouchableOpacity style={styles.menuItem} onPress={handleBecomeSeller}>
-            <Feather name="user-check" size={24} color="black" />
-            <Text style={styles.menuItemText}>Quiero ser vendedor</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/profileBuyer')}
+            disabled={pathname === '/profileBuyer'} // Deshabilita si ya estás en esta vista
+          >
+            <Feather name="user" size={24} color={pathname === '/profileBuyer' ? '#ccc' : 'black'} />
+            <Text style={[styles.menuItemText, pathname === '/profileBuyer' && { color: '#ccc' }]}>Mi cuenta</Text>
+            <Ionicons name="chevron-forward" size={24} color={pathname === '/profileBuyer' ? '#ccc' : 'black'} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleBecomeSeller}
+            disabled={pathname === '/home' || pathname === '/registerSeller'}
+          >
+            <Feather name="user-check" size={24} color={(pathname === '/home' || pathname === '/registerSeller') ? '#ccc' : 'black'} />
+            <Text style={[styles.menuItemText, (pathname === '/home' || pathname === '/registerSeller') && { color: '#ccc' }]}>Quiero ser vendedor</Text>
+            <Ionicons name="chevron-forward" size={24} color={(pathname === '/home' || pathname === '/registerSeller') ? '#ccc' : 'black'} />
           </TouchableOpacity>
         </View>
       </View>
@@ -190,22 +196,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: 'black',
+    paddingBottom: 25,
   },
   menuItems: {
-    marginBottom: 30,
+    marginBottom: 35,
   },
   menuItem: {
+    backgroundColor: '#fdebd0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    marginBottom: 10,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#ff6e33',
     marginHorizontal: 10,
   },
   menuItemText: {
     marginLeft: 15,
-    fontSize: 16,
+    fontSize: 17,
     color: 'black',
   },
   logoutContainer: {

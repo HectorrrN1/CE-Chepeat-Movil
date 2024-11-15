@@ -5,7 +5,6 @@ const styles = StyleSheet.create({
       flex: 1,
       backgroundColor: '#fff',
       marginBottom: 0,
-      marginTop: 35,
     },
     keyboardAvoidingView: {
       flex: 1,

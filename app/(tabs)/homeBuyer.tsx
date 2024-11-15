@@ -84,14 +84,43 @@ export default function homeBuyer() {
   const [products, setProducts] = useState<ProductWithSeller[]>([]);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithSeller[]>([]);
+
+  useEffect(() => {
+    // Filtrar productos cada vez que cambia la búsqueda
+    if (search.trim() === '') {
+      setFilteredProducts(products); // Mostrar todos los productos si no hay texto de búsqueda
+    } else {
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(search.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [search, products]);
+
+  // Renderizar productos filtrados o mensaje de advertencia
+  const renderProductGrid = () => {
+    if (filteredProducts.length === 0) {
+      return <Text style={styles.noProductsText}>No se encontraron productos.</Text>;
+    }
+    return (
+      <FlatList
+        data={filteredProducts}
+        renderItem={renderProductItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        scrollEnabled={false}
+      />
+    );
+  };
+
 
   // Función para obtener productos desde la API
   const fetchProducts = async () => {
     try {
       const token = await SecureStore.getItemAsync('userToken');
+      const userId = await SecureStore.getItemAsync('userId'); // Asegúrate de almacenar previamente el userId
       const lat = latitude ? parseFloat(latitude.toString()) : null;
       const lon = longitude ? parseFloat(longitude.toString()) : null;
   
@@ -103,15 +132,18 @@ export default function homeBuyer() {
       // Obtener productos cercanos
       const response = await axios.post(
         'https://backend-j959.onrender.com/api/Product/GetProductsByRadius',
-        { latitude: lat, longitude: lon, radiusKm: 500 },
+        { latitude: lat, longitude: lon, radiusKm: 0.5 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
       const productData = response.data.slice(0, 6);
   
+      // Filtrar productos para excluir los del usuario actual
+      const filteredProductData = productData.filter((product: Product) => product.idSeller !== userId);
+  
       // Obtener datos de vendedores para cada producto
       const productsWithSellerData = await Promise.all(
-        productData.map(async (product: Product) => {  // Especificamos el tipo 'Product' aquí
+        filteredProductData.map(async (product: Product) => {
           const sellerResponse = await axios.post(
             'https://backend-j959.onrender.com/api/Seller/SelectSellerById',
             product.idSeller,
@@ -120,13 +152,12 @@ export default function homeBuyer() {
           return { ...product, sellerData: sellerResponse.data };
         })
       );
-      
   
       // Guardar datos en AsyncStorage
       await AsyncStorage.setItem('products', JSON.stringify(productsWithSellerData));
   
       // Mostrar productos en la consola para verificación
-      console.log('Productos con datos del vendedor:', productsWithSellerData);
+      console.log('Productos filtrados con datos del vendedor:', productsWithSellerData);
   
       setProducts(productsWithSellerData);
     } catch (error) {
@@ -139,6 +170,7 @@ export default function homeBuyer() {
       }
     }
   };
+  
 
 
 
@@ -320,14 +352,9 @@ export default function homeBuyer() {
 
           <View style={styles.productGridContainer}>
             <Text style={styles.headerProduct}>Productos</Text>
-            <FlatList
-              data={products}
-              renderItem={renderProductItem}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={2}
-              scrollEnabled={false}
-            />
+            {renderProductGrid()}
           </View>
+
         </ScrollView>
         <BottomBarComponent />
       </KeyboardAvoidingView>

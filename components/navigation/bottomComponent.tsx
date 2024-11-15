@@ -8,22 +8,34 @@ const BottomBarComponent: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname(); // Obtiene la ruta actual
 
+  // Definir las rutas posibles
+  const routes = {
+    homeBuyer: '/homeBuyer' as const,
+    filterProducts: '/filterProducts' as const,
+    basket: '/' as const,
+  };
+
   const getIconColor = (routeName: string) => {
-    return pathname === routeName ? '#ff6e33' : 'gray';  // Cambia a color más oscuro si es la ruta activa
+    return pathname === routeName ? '#ff6e33' : 'gray'; // Cambia a color más oscuro si es la ruta activa
+  };
+
+  // Función para obtener el evento de pulsación solo si la ruta no está activa
+  const getOnPressHandler = (routeName: string) => {
+    return pathname === routeName ? undefined : () => router.push(routeName as any);
   };
 
   return (
     <View style={styles.bottomBar}>
-      <TouchableOpacity onPress={() => router.push('/homeBuyer')}>
-        <FontAwesome name="home" size={24} color={getIconColor('/homeBuyer')} />
+      <TouchableOpacity onPress={getOnPressHandler(routes.homeBuyer)}>
+        <FontAwesome name="home" size={24} color={getIconColor(routes.homeBuyer)} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/filterProducts')}>
-        <FontAwesome name="th-large" size={24} color={getIconColor('/filterProducts')} />
+      <TouchableOpacity onPress={getOnPressHandler(routes.filterProducts)}>
+        <FontAwesome name="th-large" size={24} color={getIconColor(routes.filterProducts)} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/')}>
-        <FontAwesome name="shopping-basket" size={24} color={getIconColor('/')} />
+      <TouchableOpacity onPress={getOnPressHandler(routes.basket)}>
+        <FontAwesome name="shopping-basket" size={24} color={getIconColor(routes.basket)} />
       </TouchableOpacity>
     </View>
   );
