@@ -48,7 +48,8 @@ export default function ProfileScreen() {
       const storedUserData = await SecureStore.getItemAsync('userData');
       if (storedUserData) {
         const parsedData = JSON.parse(storedUserData);
-        setUserData(parsedData);
+        console.log('User data loaded:', parsedData);  // Verifica que los datos están bien cargados
+        setUserData(parsedData.user);  // Aquí accedes al campo 'user' directamente
       }
     };
     loadUserData();
@@ -76,7 +77,7 @@ export default function ProfileScreen() {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+            {userData?.fullname ? userData.fullname.charAt(0).toUpperCase() : 'U'}
             </Text>
           </View>
           <Text style={styles.greeting}>Tu cuenta</Text>

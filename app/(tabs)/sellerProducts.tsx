@@ -5,13 +5,12 @@ import { useRouter } from 'expo-router';
 import Sidebar from '@/components/navigation/sidebar';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-import { Double } from 'react-native/Libraries/Types/CodegenTypes';
 
 // Define la interfaz para los props del componente
 interface ProductItemProps {
   name: string;
   description: string;
-  price: Double;
+  price: number;
   stock: number;
   measure: string;
   imageUrl: string;
@@ -24,9 +23,9 @@ const ProductItem: FC<ProductItemProps> = ({ name, description, price, stock, me
     <View style={styles.productInfo}>
       <Text style={styles.productName}>{name}</Text>
       <Text style={styles.productDescription}>{description}</Text>
-      <Text style={styles.productPrice}>${price} MXN</Text>
+      <Text style={styles.productPrice}>${price} por {measure}</Text>
       <Text style={[styles.productStock, stock > 0 ? styles.inStock : styles.outOfStock]}>
-        {stock > 0 ? `${stock} ${measure}` : 'Sin Stock'}
+        {stock > 0 ? `${stock} en stock` : 'Sin Stock'}
       </Text>
     </View>
   </View>
@@ -63,36 +62,32 @@ export default function VendorProductList() {
     }).start();
   };
 
-  const fetchProductsBySellerId = async () => {
+  const obtenerDatosVendedor = async () => {
     try {
-      const token = await SecureStore.getItemAsync('userToken');
-      if (!token) {
-        console.error('Error: No se encontró el token de usuario');
-        alert('Error: No se encontró el token de usuario.');
-        return;
+      // Obtener el userData almacenado en SecureStore
+      const userDataString = await SecureStore.getItemAsync('userData');
+  
+      if (!userDataString) {
+        console.error('Error: No se encontraron los datos del usuario');
+        alert('Error: No se encontraron los datos del usuario.');
+        return null;
       }
-
-      const sellerDataString = await SecureStore.getItemAsync('sellerData');
-      let sellerId = null;
-
-      if (sellerDataString) {
-        const sellerData = JSON.parse(sellerDataString);
-
-        if (sellerData && sellerData.id) {
-          sellerId = sellerData.id;
-          console.log('ID del vendedor recuperado:', sellerId);
-        } else {
-          console.error('Error: No se encontró el id del vendedor');
-          alert('Error: No se encontró el id del vendedor.');
-          return;
-        }
+  
+      // Parsear los datos de usuario para obtener el token y idUser
+      const userData = JSON.parse(userDataString);
+      const token = userData.token; // Aquí obtienes el token directamente del objeto userData
+      const idUser = userData.user.id;
+  
+      if (!token || !idUser) {
+        console.error('Error: No se encontró el token o idUser');
+        alert('Error: No se encontró el token o idUser.');
+        return null;
       }
-
-      console.log('Datos a enviar:', sellerId);
-
-      const response = await axios.post(
-        'https://backend-j959.onrender.com/api/Product/GetProductsByIdSeller',
-        sellerId,
+  
+      // Hacer la petición a SelectSellerByIdUser
+      const sellerResponse = await axios.post(
+        'https://backend-j959.onrender.com/api/seller/SelectSellerByIdUser',
+        idUser,  // Enviar el idUser como parte del cuerpo
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -100,27 +95,79 @@ export default function VendorProductList() {
           },
         }
       );
-
+  
+      // Guardar los datos del vendedor en SecureStore como sellerData
+      const sellerData = sellerResponse.data;
+      await SecureStore.setItemAsync('sellerData', JSON.stringify(sellerData));
+      console.log('Datos del vendedor guardados:', sellerData);
+  
+      return sellerData; // Devolver los datos del vendedor para usarlos en la siguiente función
+    } catch (error: any) {
+      console.error('Error al obtener los datos del vendedor:', error.response?.data || error.message);
+      alert('Error al obtener los datos del vendedor');
+      return null;
+    }
+  };
+  
+  
+  const fetchProductsBySellerId = async (sellerId: string) => {
+    try {
+      // Obtener los datos de usuario almacenados en SecureStore
+      const userDataString = await SecureStore.getItemAsync('userData');
+  
+      if (!userDataString) {
+        console.error('Error: No se encontraron los datos del usuario');
+        alert('Error: No se encontraron los datos del usuario.');
+        return;
+      }
+  
+      // Parsear los datos de usuario para obtener el token
+      const userData = JSON.parse(userDataString);
+      const token = userData.token; // Aquí obtenemos el token desde userData
+  
+      if (!token) {
+        console.error('Error: No se encontró el token de usuario');
+        alert('Error: No se encontró el token de usuario.');
+        return;
+      }
+  
+      console.log('ID del vendedor para obtener productos:', sellerId);
+  
+      // Petición para obtener productos por ID del vendedor
+      const response = await axios.post(
+        'https://backend-j959.onrender.com/api/Product/GetProductsByIdSeller',
+        sellerId,  // Pasamos sellerId en el cuerpo de la solicitud
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Usamos el token aquí
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
       if (response.status === 200) {
         console.log('Productos obtenidos exitosamente:', response.data);
+        // Asignar los productos al estado o procesamiento necesario
         setProducts(response.data); // Directamente asignar el arreglo de productos
       } else {
         console.error('Error en la respuesta:', response);
         alert('Error al obtener los productos');
       }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error('Error en la respuesta de la API:', error.response?.data);
-        alert('Error en la solicitud a la API');
-      } else {
-        console.error('Error desconocido:', error);
-        alert('Ha ocurrido un error inesperado.');
-      }
+    } catch (error: any) {
+      console.error('Error en la respuesta de la API:', error.response?.data || error.message);
+      alert('Error en la solicitud a la API');
     }
   };
-
+  
   useEffect(() => {
-    fetchProductsBySellerId();
+    const obtenerDatosYProductos = async () => {
+      const sellerData = await obtenerDatosVendedor(); // Paso 1: Obtener los datos del vendedor
+      if (sellerData && sellerData.id) {
+        await fetchProductsBySellerId(sellerData.id); // Paso 2: Obtener los productos usando el ID del vendedor
+      }
+    };
+  
+    obtenerDatosYProductos();
   }, []);
 
   return (
@@ -148,29 +195,28 @@ export default function VendorProductList() {
         {products && products.length > 0 ? (
           products.map((product: any) => (
             <TouchableOpacity key={product.id} onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-              <ProductItem
-                name={product.name}
-                description={product.description}
-                price={product.price}
-                stock={product.stock}
-                measure={product.measure}
-                imageUrl={product.imageUrl || 'default-image-url'} // Asumiendo una imagen por defecto si no hay URL
-              />
+              <View style={styles.productItemContainer}>
+                <Image source={{ uri: product.imageUrl || 'default-image-url' }} style={styles.productImage} />
+                <View style={styles.productTextContainer}>
+                  <Text style={styles.productName}>{product.name}</Text>
+                  <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
+                </View>
+              </View>
             </TouchableOpacity>
           ))
         ) : (
-          <Text>No se encontraron productos disponibles</Text>
+          <Text style={styles.noProductsText}>Aun no ha agregado productos a vender</Text>
         )}
       </ScrollView>
 
       <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => router.push('/home')}>
+        <TouchableOpacity onPress={() => router.replace('/home')}>
           <Feather name="home" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/sellerProducts')}>
+        <TouchableOpacity onPress={() => router.replace('/sellerProducts')}>
           <Feather name="list" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/profileSeller')}>
+        <TouchableOpacity onPress={() => router.replace('/profileSeller')}>
           <Feather name="user" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -197,7 +243,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
   },
   header: {
     flexDirection: 'row',
@@ -239,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   productList: {
-    marginBottom: 50,
+    marginBottom: 0,
   },
   productItem: {
     flexDirection: 'row',
@@ -247,13 +292,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  productItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 10,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2, // Para Android
+  },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#E0E0E0',
+    marginRight: 10,
   },
   productInfo: {
+    flex: 1,
+  },
+  productTextContainer: {
     flex: 1,
   },
   productName: {
@@ -267,7 +330,6 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     fontSize: 14,
-    fontWeight: 'bold',
     color: '#333',
   },
   productStock: {
@@ -279,14 +341,19 @@ const styles = StyleSheet.create({
   outOfStock: {
     color: 'red',
   },
+  noProductsText: {
+    marginHorizontal: 20, 
+    marginVertical: 10, 
+    fontSize: 16, 
+    color: '#666',
+  },
   navbar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingVertical: 10,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,

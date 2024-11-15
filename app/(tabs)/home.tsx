@@ -51,52 +51,11 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ name, time }) => (
 export default function ProductManagement() {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
-  const [userData, setUserData] = useState(null);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const router = useRouter();
-
-  useEffect(() => {
-    // Función para cargar datos del usuario al iniciar
-    const fetchUserData = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('userToken');
-        const storedUserData = await SecureStore.getItemAsync('userData');
-        const userId = storedUserData ? JSON.parse(storedUserData).id : null;
-  
-        console.log('Token:', token, 'UserId:', userId);
-  
-        if (token && userId) {
-          const response = await axios.post(
-            'https://backend-j959.onrender.com/api/Seller/SelectSellerByIdUser',
-            userId, // Enviar solo el userId directamente
-            {
-              headers: {
-                Authorization: `Bearer ${token}`, // Token en la cabecera de autorización
-                'Content-Type': 'application/json' // Asegura el tipo de contenido correcto
-              },
-            }
-          );          
-  
-          const userData = response.data;
-          console.log('Datos del usuario:', userData);
-          await SecureStore.setItemAsync('sellerData', JSON.stringify(userData));
-          setUserData(userData);
-        } else {
-          console.error("Token o userId no disponible.");
-        }
-      } catch (error) {
-        if (error) {
-          console.error('Error de respuesta del servidor:', error);
-        } else {
-          console.error('Error de solicitud:', error);
-        }
-      }
-    };
-  
-    fetchUserData(); // Llamar a la función al cargar la vista
-  }, []);
-  
-
+  const [sellerData, setSellerData] = useState(null);
+  const [products, setProducts] = useState<any[]>([]); // Estado para almacenar los productos
+  const [isSeller, setIsSeller] = useState(false);
 
   // Función para ocultar el sidebar con animación 'timing'
   const closeSidebar = () => {
@@ -121,6 +80,131 @@ export default function ProductManagement() {
     }).start();
   };
 
+  // Obtener datos del usuario desde SecureStore
+const fetchUserData = async () => {
+  try {
+    const userDataString = await SecureStore.getItemAsync('userData');
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+
+    if (userData && userData.user) {
+      console.log('Datos del usuario:', userData);
+      setIsSeller(userData.user.isSeller || false);
+      return userData;
+    } else {
+      console.warn('No se encontraron datos de usuario en SecureStore');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error al obtener los datos del usuario:', error);
+    return null;
+  }
+};
+
+// Obtener y guardar datos del vendedor y del usuario combinados
+const obtenerYGuardarDatosCombinados = async () => {
+  try {
+    const userData = await fetchUserData();
+    if (!userData) return;
+
+    const token = userData.token;
+    const idUser = userData.user.id;
+
+    if (!token || !idUser) {
+      console.error('Error: No se encontró el token o idUser');
+      return;
+    }
+
+    const sellerResponse = await axios.post(
+      'https://backend-j959.onrender.com/api/seller/SelectSellerByIdUser',
+      idUser, // Enviar solo el ID como cadena de texto en el cuerpo
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const sellerData = sellerResponse.data;
+    console.log('Datos del vendedor obtenidos:', sellerData);
+
+    if (sellerData) {
+      setSellerData(sellerData);
+
+      // Combina ambos datos en un solo objeto
+      const combinedData = { ...userData, sellerData };
+
+      // Guarda el objeto combinado en SecureStore
+      await SecureStore.setItemAsync('combinedUserData', JSON.stringify(combinedData));
+      console.log('Datos del usuario y su negocio guardados en SecureStore:', combinedData);
+    } else {
+      console.error('No se encontraron datos del vendedor.');
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      // Si el error es de Axios, puedes acceder a response y message
+      console.error('Error al obtener los datos combinados del usuario y vendedor:', error.response?.data || error.message);
+    } else {
+      // Si el error es de otro tipo
+      console.error('Error desconocido:', error);
+    }
+  }
+};
+
+// Obtener productos del vendedor usando su ID
+const obtenerProductosPorIdSeller = async () => {
+  try {
+    const combinedDataString = await SecureStore.getItemAsync('combinedUserData');
+    const combinedData = combinedDataString ? JSON.parse(combinedDataString) : null;
+
+    if (!combinedData || !combinedData.sellerData) {
+      console.warn('No se encontraron datos de vendedor en SecureStore');
+      return;
+    }
+
+    const sellerId = combinedData.sellerData.id;
+    const token = combinedData.token;
+
+    if (!token || !sellerId) {
+      console.error('Error: No se encontró el token o el ID del vendedor');
+      return;
+    }
+
+    const productsResponse = await axios.post(
+      'https://backend-j959.onrender.com/api/Product/GetProductsByIdSeller',
+      sellerId, // Enviar el ID del vendedor en el cuerpo de la solicitud
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const productsData = productsResponse.data;
+    console.log('Productos obtenidos:', productsData);
+
+    if (productsData) {
+      setProducts(productsData); // Guardar los productos en el estado
+    } else {
+      console.warn('No se encontraron productos para este vendedor.');
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error('Error al obtener los productos del vendedor:', error.response?.data || error.message);
+    } else {
+      console.error('Error desconocido:', error);
+    }
+  }
+};
+
+// Hook para cargar los productos después de obtener los datos del vendedor
+useEffect(() => {
+  obtenerYGuardarDatosCombinados().then(() => {
+    obtenerProductosPorIdSeller();
+  });
+}, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -132,14 +216,24 @@ export default function ProductManagement() {
 
       <ScrollView style={styles.content}>
         <Text style={styles.sectionTitle}>Mis Productos</Text>
-        <View style={styles.productContainer}>
-          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-            <ProductItem name="Verduras Frescas" price="12.99" image={require('@/assets/images/verduras.jpg')} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
-            <ProductItem name="Pan Artesanal" price="5.50" image={require('@/assets/images/pan.jpg')} />
-          </TouchableOpacity>
-        </View>
+        <ScrollView style={styles.productList}>
+          {products && products.length > 0 ? (
+            products.map((product: any) => (
+              <TouchableOpacity key={product.id} onPress={() => router.push(`/productDetailSeller`)} activeOpacity={1}>
+                <View style={styles.productItemContainer}>
+                  <Image source={{ uri: product.imageUrl || 'default-image-url' }} style={styles.productImage} />
+                  <View style={styles.productTextContainer}>
+                    <Text style={styles.productName}>{product.name}</Text>
+                    <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noProductsText}>Aun no ha agregado productos a vender</Text>
+          )}
+        </ScrollView>
+
         <TouchableOpacity style={styles.addButton} onPress={() => router.push('/addProductSeller')}>
           <Text style={styles.addButtonText}>Agregar Producto</Text>
         </TouchableOpacity>
@@ -193,13 +287,10 @@ export default function ProductManagement() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 35,
     paddingHorizontal: 5,
   },
   header: {
@@ -226,29 +317,41 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  productItemContainer: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 15,
-    borderColor: '#7E7E7E',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowRadius: 5,
-    elevation: 3,
+  productList: {
+    marginBottom: 50,
   },
-  productItem: {
+  productItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 10,
+    marginVertical: 8,
+    marginHorizontal: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2, // Para Android
+  },
+
+  productItem: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   productImage: {
     width: 50,
     height: 50,
     borderRadius: 25,
     backgroundColor: '#E0E0E0',
-    marginRight: 12,
+    marginRight: 10,
   },
   productInfo: {
+    flex: 1,
+  },
+  productTextContainer: {
     flex: 1,
   },
   productName: {
@@ -261,7 +364,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     width: '100%',
-    marginBottom: 10,
+    marginBottom: 16,
     backgroundColor: '#DF1C24',
     borderRadius: 25,
     height: 50,
@@ -303,6 +406,12 @@ const styles = StyleSheet.create({
   },
   historyTime: {
     fontSize: 14,
+    color: '#666',
+  },
+  noProductsText: {
+    marginHorizontal: 10,
+    marginTop: 10,
+    fontSize: 16,
     color: '#666',
   },
   navbar: {

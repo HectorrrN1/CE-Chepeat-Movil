@@ -123,22 +123,44 @@ export default function RegisterSeller() {
         }, {} as any);
     };
 
+
+
     const handleRegisterSeller = async () => {
         if (acceptTerms) {
             console.log('Registro del negocio ingresado con:', storeName, description, street, extNumber, intNumber,
                 neighborhood, city, state, cp, addressNotes, latitude, longitude);
     
             try {
-                const token = await SecureStore.getItemAsync('userToken');
-                const userData = await SecureStore.getItemAsync('userData');
-                const userId = userData ? JSON.parse(userData).id : null; // Extrae el id del usuario
-                const currentDate = new Date().toISOString();
-    
-                if (!userId) {
-                    console.error('Error: No se encontró el id del usuario');
-                    alert('Error: No se encontró el id del usuario.');
+                // Obtener los datos de usuario almacenados en SecureStore
+                const userDataString = await SecureStore.getItemAsync('userData');
+                if (!userDataString) {
+                    console.error('Error: No se encontraron los datos del usuario');
+                    alert('Error: No se encontraron los datos del usuario.');
                     return;
                 }
+    
+                // Parsear los datos de usuario para obtener el token
+                const userData = JSON.parse(userDataString);
+                const token = userData.token;  // Aquí obtenemos el token desde userData
+    
+                if (!token) {
+                    console.error('Error: No se encontró el token de usuario');
+                    alert('Error: No se encontró el token de usuario.');
+                    return;
+                }
+    
+                // Obtener el ID del usuario desde los datos de SecureStore
+                let userId = null;
+                if (userData && userData.user && userData.user.id) {
+                    userId = userData.user.id;
+                    console.log('ID del usuario recuperado:', userId);
+                } else {
+                    console.error('Error: No se encontró el id del usuario en los datos de SecureStore');
+                    alert('Error: No se encontró el id del usuario en los datos.');
+                    return;
+                }
+    
+                const currentDate = new Date().toISOString();
     
                 const dataToSend = cleanData({
                     storeName,
@@ -153,7 +175,7 @@ export default function RegisterSeller() {
                     addressNotes,
                     latitude,
                     longitude,
-                    idUser: userId, // Añadir idUser en la petición
+                    idUser: userId, // Enviar id del usuario en la petición
                     createdAt: currentDate,
                     updatedAt: currentDate,
                 });
@@ -163,17 +185,17 @@ export default function RegisterSeller() {
                     dataToSend,
                     {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': `Bearer ${token}`,  // Usamos el token aquí
                         },
                     }
                 );
     
+                const sellerData = response.data.seller;
                 console.log('Negocio registrado exitosamente:', response.data);
     
-                // Guarda los datos de la respuesta en expo-secure-store
-                //await SecureStore.setItemAsync('sellerData', JSON.stringify(response.data));
+                // Guarda los datos de seller en SecureStore
+                await SecureStore.setItemAsync('sellerData', JSON.stringify(sellerData));
     
-                // Redirige al usuario
                 router.push('/home');
             } catch (error) {
                 if (axios.isAxiosError(error)) {
@@ -187,6 +209,9 @@ export default function RegisterSeller() {
             alert('Debes aceptar los términos y condiciones para continuar.');
         }
     };
+    
+
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -242,6 +267,7 @@ export default function RegisterSeller() {
                         value={city}
                         onChangeText={setCity}
                         style={styles.inputStyle}
+                        editable={false}
                     />
 
                     <StyledInput

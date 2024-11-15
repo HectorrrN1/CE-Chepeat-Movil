@@ -68,17 +68,21 @@ export default function LoginScreen() {
           // los datos del usuario en SecureStore
           const token = response.data.token;
           const refreshToken = response.data.refreshToken;
-          const userData = response.data.user;
+          const userData = {
+            id: response.data.user.id, // Asegúrate de que el ID esté presente.
+            isSeller: response.data.user.isSeller || false, // Asegúrate de guardar `isSeller`.
+            email: response.data.user.email, // Guarda otros campos importantes si los necesitas.
+            fullname: response.data.user.fullname,
+          };
 
           await SecureStore.setItemAsync('userToken', token);
           await SecureStore.setItemAsync('refreshToken', refreshToken);
-          await SecureStore.setItemAsync('userData', JSON.stringify(userData));
+          await SecureStore.setItemAsync('userData', JSON.stringify({ user: userData, token }));
 
-          console.log('Inicio de sesión exitoso, token y datos del usuario guardados: ', token, refreshToken, userData);
+          console.log('Inicio de sesión exitoso, token y datos del usuario guardados:', token, refreshToken, userData);
 
-          //Se redirige a la pantalla principal
           router.push('/homeBuyer');
-        }else {
+        } else {
           setModalMessage('Credenciales no válidas. Vuelve a intentarlo.');
           setIsModalVisible(true);
         }

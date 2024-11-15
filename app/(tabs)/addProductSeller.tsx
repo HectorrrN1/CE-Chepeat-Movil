@@ -5,8 +5,8 @@ import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
+import { router } from 'expo-router';
 
 export default function AddProductScreen() {
     const navigation = useNavigation(); // Usar el hook de navegación
@@ -47,13 +47,6 @@ export default function AddProductScreen() {
 
     // Usar useEffect para recuperar los datos al montar el componente
     useEffect(() => {
-        const requestPermissions = async () => {
-            const { status } = await Notifications.requestPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Advertencia', 'No se otorgaron permisos para las notificaciones');
-            }
-        };
-        requestPermissions();
         fetchUserData();
     }, []);
 
@@ -63,16 +56,26 @@ export default function AddProductScreen() {
             Alert.alert('Error', 'Por favor completa todos los campos');
             return;
         }
-
+    
         try {
-            // Obtener el token de SecureStore
-            const token = await SecureStore.getItemAsync('userToken');
+            // Obtener los datos de usuario almacenados en SecureStore
+            const userDataString = await SecureStore.getItemAsync('userData');
+            if (!userDataString) {
+                console.error('Error: No se encontraron los datos del usuario');
+                Alert.alert('Error', 'No se encontraron los datos del usuario.');
+                return;
+            }
+    
+            // Parsear los datos de usuario para obtener el token
+            const userData = JSON.parse(userDataString);
+            const token = userData.token;  // Aquí obtenemos el token desde userData
+    
             if (!token) {
                 console.error('Error: No se encontró el token de usuario');
                 Alert.alert('Error', 'No se encontró el token de usuario.');
                 return;
             }
-
+    
             const response = await axios.post(
                 'https://backend-j959.onrender.com/api/Product/AddProduct',
                 {
@@ -86,34 +89,22 @@ export default function AddProductScreen() {
                 },
                 {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${token}`,  // Usamos el token aquí
                     },
                 }
             );
-
+    
             Alert.alert('Éxito', 'Producto guardado con éxito');
-            sendNotification(); // Llamada para enviar la notificación
-
+    
             // Redirigir a la pantalla /sellerProducts
-            navigation.navigate('sellerProducts'); // Esto redirige a /sellerProducts
-
+            router.replace('/sellerProducts'); // Esto redirige a /sellerProducts
+    
         } catch (error) {
             Alert.alert('Error', 'Hubo un problema al guardar el producto');
             console.error(error);
         }
     };
-
-    // Función para enviar la notificación
-    const sendNotification = async () => {
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: '¡Producto guardado!',
-                body: 'El producto ha sido guardado exitosamente en el sistema.',
-                sound: 'default',
-            },
-            trigger: null, // Enviar inmediatamente
-        });
-    };
+    
 
     const openImagePicker = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -181,7 +172,7 @@ export default function AddProductScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Precio MXN</Text>
+                    <Text style={styles.label}>Precio Mnx</Text>
                     <TextInput
                         style={styles.input}
                         value={price}

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useRouter, usePathname  } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+
 interface UserData {
   fullname: string;
   isSeller: boolean;
@@ -26,11 +27,15 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
       const storedUserData = await SecureStore.getItemAsync('userData');
       if (storedUserData) {
         const parsedData = JSON.parse(storedUserData);
-        setUserData(parsedData);
+        console.log('User data loaded:', parsedData);  // Verifica que los datos están bien cargados
+        setUserData(parsedData.user);  // Aquí accedes al campo 'user' directamente
       }
     };
     loadUserData();
   }, []);
+
+
+
 
   const rotateInterpolate = rotationAnim.interpolate({
     inputRange: [0, 1],
@@ -106,12 +111,12 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {userData ? userData.fullname.charAt(0).toUpperCase() : 'U'}
+              {userData?.fullname ? userData.fullname.charAt(0).toUpperCase() : 'U'}
             </Text>
           </View>
           <Text style={styles.greeting}>Hola</Text>
           <Text style={styles.username}>
-            {userData ? userData.fullname : 'Cargando...'}
+          {userData?.fullname ? userData.fullname : 'Cargando...'}
           </Text>
         </View>
 
