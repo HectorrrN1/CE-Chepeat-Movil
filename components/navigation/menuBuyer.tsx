@@ -79,6 +79,7 @@ const MenuBuyer: React.FC<MenuBuyerProps> = ({ isOpen, onToggle }) => {
       await SecureStore.deleteItemAsync('userData');
       await SecureStore.deleteItemAsync('refreshToken');
       await SecureStore.deleteItemAsync('sellerData');
+      await SecureStore.deleteItemAsync('products');
 
       handleToggle();
       setTimeout(() => {

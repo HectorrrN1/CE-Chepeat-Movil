@@ -9,7 +9,8 @@ import BottomBarComponent from '@/components/navigation/bottomComponent';
 import styles from '@/assets/styles/productDetails';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuidv4 } from 'uuid'; // Para generar UUID
 
 // Definimos los tipos de los datos del producto
 type SellerData = {
@@ -26,7 +27,7 @@ type SellerData = {
 };
 
 type Product = {
-  id: string,
+  id: string;
   name: string;
   price: number;
   description: string;
@@ -37,7 +38,7 @@ type Product = {
 type ImageSource = { uri: string } | null;
 
 const ProductDetails = () => {
-  const { name } = useLocalSearchParams();  // Obtener 'name' desde los parámetros de la URL
+  const { name } = useLocalSearchParams(); // Obtener 'name' desde los parámetros de la URL
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [isChecked, setChecked] = useState(false);
@@ -49,29 +50,35 @@ const ProductDetails = () => {
 
   useEffect(() => {
     if (!name) {
-      console.warn('No se ha proporcionado un nombre para buscar en SecureStore.');
+      console.warn('No se ha proporcionado un nombre para buscar ');
       return;
     }
 
     const normalizedName = normalizeString(Array.isArray(name) ? name[0] : name || '');
-
+    console.log("Buscando producto con el nombre normalizado:", normalizedName);
 
     const fetchProductDetails = async () => {
       try {
-        const storedProducts = await SecureStore.getItemAsync('products');
-        if (storedProducts) {
-          const products: Product[] = JSON.parse(storedProducts);
+        const storedProducts = await AsyncStorage.getItem('products');
+        if (!storedProducts) {
+          console.warn('No se encontraron productos:');
+          return;
+        }
 
-          const foundProduct = products.find((p) => normalizeString(p.name) === normalizedName);
+        const products: Product[] = JSON.parse(storedProducts);
+        console.log('Productos encontrados:', products);
 
-          if (foundProduct) {
-            setProduct(foundProduct);
-            if (foundProduct.image && foundProduct.image.startsWith('http')) {
-              setImageSource({ uri: foundProduct.image });
-            }
-          } else {
-            console.warn('Producto no encontrado en SecureStore. Nombre buscado:', normalizedName);
+        const foundProduct = products.find(
+          (p) => normalizeString(p.name).toLowerCase() === normalizedName.toLowerCase()
+        );
+
+        if (foundProduct) {
+          setProduct(foundProduct);
+          if (foundProduct.image && foundProduct.image.startsWith('http')) {
+            setImageSource({ uri: foundProduct.image });
           }
+        } else {
+          console.warn('Producto no encontrado:', normalizedName);
         }
       } catch (error) {
         console.error('Error al obtener los detalles del producto:', error);
@@ -92,28 +99,44 @@ const ProductDetails = () => {
   const confirmPurchase = async () => {
     console.log("confirmPurchase fue llamado");
     setModalVisible(false);
-
+  
     try {
+      // Obtener el token de autorización
       const token = await SecureStore.getItemAsync('userToken');
       if (!token) {
         console.warn('Token no encontrado');
         return;
       }
-
+  
+      // Obtener los datos del usuario
       const userDataString = await SecureStore.getItemAsync('userData');
+      console.log("Datos del usuario recuperados de SecureStore:", userDataString);
+  
       if (!userDataString) {
         console.warn('Datos del usuario no encontrados');
         return;
       }
-
+  
+      // Acceder al id del comprador (idBuyer)
       const userData = JSON.parse(userDataString);
-      const idBuyer = userData.id; // Ajusta según la estructura real de `userData`
-
+      const idBuyer = userData.user?.id; // Ajusta al formato almacenado
+      console.log("idBuyer obtenido:", idBuyer);
+  
+      // Validar que todos los datos necesarios están presentes
+      if (!product?.id || !idBuyer) {
+        console.warn('Faltan datos para realizar la compra.');
+        return;
+      }
+  
+      // Crear el objeto de solicitud
       const purchaseRequest = {
-        idProduct: product?.id,
+        idProduct: product.id,
         idBuyer: idBuyer,
       };
-
+  
+      console.log("Datos que se enviarán en la solicitud:", purchaseRequest);
+  
+      // Realizar la solicitud a la API
       const response = await axios.post(
         'https://backend-j959.onrender.com/api/PurchaseRequest/Create',
         purchaseRequest,
@@ -124,30 +147,33 @@ const ProductDetails = () => {
           },
         }
       );
-
+  
       console.log('Respuesta de la API:', response.data);
-
-      router.push('/confirmBuy');
+  
+      // Redirigir al homeBuyer y mostrar el modal
+      router.push('/homeBuyer'); // Redirige a la vista de buyer
+      // Mostrar el modal en homeBuyer (se manejaría en esa vista)
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        // Si el error es de tipo AxiosError, accedemos a `error.response.data`
         console.error('Error al hacer la solicitud de compra:', error.response?.data || error.message);
       } else {
-        // Si no es un error de Axios, mostramos el error genérico
         console.error('Error inesperado:', error);
       }
     }
-  };
+};
+
+  
+  
 
   const openMap = () => {
     if (product?.sellerData?.latitude && product?.sellerData?.longitude) {
       const mapUrl = Platform.select({
         ios: `maps://?daddr=${product.sellerData.latitude},${product.sellerData.longitude}`,
-        android: `google.navigation:q=${product.sellerData.latitude},${product.sellerData.longitude}`
+        android: `google.navigation:q=${product.sellerData.latitude},${product.sellerData.longitude}`,
       });
 
       if (mapUrl) {
-        Linking.openURL(mapUrl).catch(err => console.error('Error al abrir el mapa:', err));
+        Linking.openURL(mapUrl).catch((err) => console.error('Error al abrir el mapa:', err));
       }
     }
   };
@@ -176,7 +202,6 @@ const ProductDetails = () => {
         <View style={styles.detailsContainer}>
           <TouchableOpacity onPress={openMap}>
             <Text style={styles.detailsText}>Dirección</Text>
-
             <Text style={styles.detailsValue}>
               {product.sellerData.street}, {product.sellerData.intNumber}, {product.sellerData.city}, {product.sellerData.state}
             </Text>
@@ -189,8 +214,10 @@ const ProductDetails = () => {
             style={styles.sellerIcon}
           />
           <View>
-            <Text style={styles.sellerName}>{product.sellerData.storeName}</Text>
-            <Text style={styles.sellerRating}>⭐ {product.sellerData.rating}</Text>
+            <TouchableOpacity onPress={() => router.push('/aboutSeller')}>
+              <Text style={styles.sellerName}>{product.sellerData.storeName}</Text>
+              <Text style={styles.sellerRating}>⭐ {product.sellerData.rating}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -198,11 +225,10 @@ const ProductDetails = () => {
           <CheckBox
             value={isChecked}
             onValueChange={setChecked}
-            color={isChecked ? '#f7b82b' : undefined}
+            color={isChecked ? '#ff6e33' : undefined}
           />
           <Text style={styles.checkboxText}>Estoy de acuerdo con las condiciones del producto</Text>
         </View>
-
 
         <TouchableOpacity style={styles.purchaseButton} onPress={handlePurchase}>
           <Text style={styles.buttonText}>Comprar</Text>

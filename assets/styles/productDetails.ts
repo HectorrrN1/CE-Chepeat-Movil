@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
       marginBottom: 20,
     },
     detailsContainer: {
-      backgroundColor: '#df1c24',
+      backgroundColor: '#ff6e33',
       padding: 10,
       borderRadius: 10,
       marginBottom: 20,

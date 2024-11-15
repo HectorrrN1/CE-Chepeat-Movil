@@ -171,10 +171,6 @@ export default function homeBuyer() {
     }
   };
   
-
-
-
-
   const closeMenu = () => {
     Animated.timing(slideAnim, {
       toValue: -300,
