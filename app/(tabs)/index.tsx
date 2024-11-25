@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, TextInput, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, SafeAreaView, KeyboardAvoidingView, 
+  ScrollView, Platform, Image, TextInput, TouchableOpacity, 
+  Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '@/components/ui/Button';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -113,7 +115,7 @@ export default function LoginScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Bienvenido a Chepeat</Text>
+            <Text style={styles.title}>Prueba de Pull Request</Text>
           </View>
           <Text style={styles.subtitle}>Por favor, inicia sesión para continuar.</Text>
 

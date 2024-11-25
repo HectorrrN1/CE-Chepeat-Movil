@@ -312,7 +312,7 @@ export default function homeBuyer() {
             ) : (
               latitude && longitude && (
                 <MapView
-                  provider={PROVIDER_GOOGLE}
+                  //provider={PROVIDER_GOOGLE}
                   style={styles.map}
                   region={{ latitude, longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
                 >
