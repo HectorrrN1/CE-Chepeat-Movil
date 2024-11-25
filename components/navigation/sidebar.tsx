@@ -1,0 +1,225 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Text } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+
+// Definición de las propiedades del componente
+interface SidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+interface SellerData {
+  fullname: string;
+  storeName: string;
+  isSeller: boolean;
+  isBuyer: boolean;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
+  const rotationAnim = useRef(new Animated.Value(0)).current;
+  const [sellerData, setSellerData] = useState<SellerData | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const loadSellerData = async () => {
+      try {
+        const storedSellerData = await SecureStore.getItemAsync('sellerData');
+        if (storedSellerData) {
+          const parsedData = JSON.parse(storedSellerData);
+          setSellerData(parsedData);
+          console.log("Datos cargados en Sidebar:", parsedData);
+        } else {
+          console.log("No se encontraron datos en SecureStore");
+        }
+      } catch (error) {
+        console.error("Error al cargar sellerData:", error);
+      }
+    };
+    
+    loadSellerData();
+  }, []);
+
+  // Animar la rotación del ícono
+  const rotateInterpolate = rotationAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  // Función para manejar el cambio de estado del sidebar
+  const handleToggle = () => {
+    Animated.timing(rotationAnim, {
+      toValue: isOpen ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    onToggle(); // Mantener la animación al tocar fuera del botón de cerrar sesión
+  };
+
+  // Función para cerrar sesión con un pequeño retraso
+  const handleLogout = () => {
+    // Primero cierra el sidebar
+    handleToggle();
+
+    // Luego agrega un delay antes de redirigir a la pantalla de logout
+    setTimeout(() => {
+      router.push('/'); // Navegar a la pantalla de logout después del delay
+    }, 300); // 300ms de delay para esperar el cierre del sidebar
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleToggle}>
+          <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+            <Feather name={isOpen ? "arrow-left" : "arrow-right"} size={24} color="black" />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Contenido del perfil y menú */}
+      <View style={styles.contentContainer}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+            {sellerData ? sellerData.storeName.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+          <Text style={styles.greeting}>Hola</Text>
+          <Text style={styles.username}>
+          {sellerData ?.storeName}
+          </Text>
+        </View>
+
+        <View style={styles.menuItems}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/profileSeller'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="user" size={24} color="black" />
+            <Text style={styles.menuItemText}>Mi cuenta</Text>
+          </TouchableOpacity>
+
+          {/*<TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/politics'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="file-text" size={24} color="black" />
+            <Text style={styles.menuItemText}>Términos y condiciones</Text>
+          </TouchableOpacity>*/}
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/sellerProducts'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="package" size={24} color="black" />
+            <Text style={styles.menuItemText}>Mis productos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              handleToggle(); // Cerrar sidebar primero
+              setTimeout(() => router.push('/homeBuyer'), 300); // Esperar 300ms antes de redirigir
+            }}>
+            <Feather name="shopping-bag" size={24} color="black" />
+            <Text style={styles.menuItemText}>Modo comprador</Text>
+          </TouchableOpacity>
+
+        </View>
+      </View>
+
+      {/* Botón para Cerrar Sesión */}
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout} // Usar la nueva función con delay
+        >
+          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  header: {
+    alignItems: 'flex-end',
+    marginBottom: 20,
+  },
+  contentContainer: {
+    flex: 1, // Permitir que este contenedor ocupe todo el espacio disponible
+  },
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ff6e33',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  avatarText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  greeting: {
+    fontSize: 18,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  menuItems: {
+    marginBottom: 30,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    marginHorizontal: 10,
+  },
+  menuItemText: {
+    marginLeft: 15,
+    fontSize: 16,
+  },
+  logoutContainer: {
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  logoutButton: {
+    borderWidth: 2,
+    borderColor: '#df1c24',
+    borderRadius: 25,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#df1c24',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
+export default Sidebar;
