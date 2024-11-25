@@ -25,39 +25,43 @@ export default function ProductDetailScreen() {
     measure: string;
     imageUrl: string;
   } | null>(null);
-  const [paymentReceived, setPaymentReceived] = useState(false);
-
-  // Función para alternar el estado del checkbox
-  const toggleCheckbox = (setChecked: React.Dispatch<React.SetStateAction<boolean>>) => {
-    setChecked((prev) => !prev);
-  };
+  const [purchaseRequests, setPurchaseRequests] = useState<
+    { id: string; buyerName: string; requestDate: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
         const token = await SecureStore.getItemAsync('userToken'); // Obtener el token guardado
 
-        console.log('Token:', token);  // Verifica si el token está presente
-
         if (!token) {
           console.error('No se encontró el token');
-          return;  // Si no hay token, no se hace la petición
+          return;
         }
 
-        const response = await axios.post('https://backend-j959.onrender.com/api/Product/GetProductById?id',
-          id,
+        const response = await axios.post(
+          'https://backend-j959.onrender.com/api/Product/GetProductDetails',
+          id, // Enviar el ID como parte del cuerpo
           {
             headers: {
-              'Authorization': `Bearer ${token}`,  // Usar el token en la cabecera
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
           }
         );
-        setProduct(response.data);  // Si la respuesta es exitosa, guardar los detalles del producto
+        // Muestra los detalles del producto y las solicitudes por separado
+        console.log('Detalles del producto:', response.data.product);
+        console.log('Solicitudes de compra:', response.data.purchaseRequests);
+
+        // Actualizar el estado con los detalles del producto y las solicitudes
+        setProduct(response.data.product);
+        setPurchaseRequests(response.data.purchaseRequests);
       } catch (error: unknown) {
-        // Verificación del tipo de error
         if (axios.isAxiosError(error)) {
-          console.error('Error al obtener los detalles del producto:', error.response ? error.response.data : error.message);
+          console.error(
+            'Error al obtener los detalles del producto:',
+            error.response ? error.response.data : error.message
+          );
         } else {
           console.error('Error desconocido:', error);
         }
@@ -70,7 +74,7 @@ export default function ProductDetailScreen() {
   }, [id]);
 
   if (!product) {
-    return <Text>Cargando detalles del producto...</Text>;  // Muestra mensaje mientras se carga el producto
+    return <Text>Cargando detalles del producto...</Text>;
   }
 
   const handleDeleteProduct = async () => {
@@ -139,7 +143,7 @@ export default function ProductDetailScreen() {
     });
   };
 
-  
+
 
   // Método para obtener la fuente de la imagen
   const getImageSource = (imageUrl: string | undefined) => {
@@ -158,36 +162,25 @@ export default function ProductDetailScreen() {
           <Text style={styles.productStock}>Stock: {product.stock}</Text>
           <Text style={styles.productMeasure}>Medida: {product.measure}</Text>
 
-          <TouchableOpacity
-            style={styles.checkboxContainer}
-            onPress={() => toggleCheckbox(setPaymentReceived)}
-          >
-            <View style={styles.checkbox}>
-              {paymentReceived && (
-                <Feather name="check" size={24} color="#666" />
-              )}
-            </View>
-            <Text style={styles.checkboxLabel}>
-              Cumple con los Estándares de Calidad
-            </Text>
-          </TouchableOpacity>
           <Text style={styles.requestsTitle}>Solicitudes del Producto</Text>
-
-          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
-            <View style={styles.sectionContainer}>
-              <RequestItem name="Diego Armando" date="Hace 2 horas" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
-            <View style={styles.sectionContainer}>
-              <RequestItem name="Alexis Santana" date="Hace 1 horas" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push(`/userProfile`)} activeOpacity={1}>
-            <View style={styles.sectionContainer}>
-              <RequestItem name="Juan Pablo" date="Hace 30 minutos" />
-            </View>
-          </TouchableOpacity>
+          {purchaseRequests.length > 0 ? (
+            purchaseRequests.map((request) => (
+              <TouchableOpacity
+                key={request.id}
+                onPress={() => router.push({ pathname: '/purchaseRequestProductSeller', params: { requestId: request.id } })}
+                activeOpacity={1}
+              >
+                <View style={styles.sectionContainer}>
+                  <RequestItem
+                    name={request.buyerName}
+                    date={new Date(request.requestDate).toLocaleString('es-MX')}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noRequests}>No hay solicitudes para este producto.</Text>
+          )}
         </View>
 
         <View style={styles.buttonRow}>
@@ -230,6 +223,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    marginTop: 35,
   },
   productImage: {
     width: '100%',
@@ -284,8 +278,8 @@ const styles = StyleSheet.create({
   requestsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 10,
   },
   requestItem: {
     flexDirection: 'row',
@@ -297,25 +291,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  checkboxLabel: {
-    fontSize: 16,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    width: '100%',
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderColor: '#000',
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+  noRequests: {
+    fontSize: 14,
+    color: '#757575',
+    marginTop: 10
   },
   buttonRow: {
     flexDirection: 'row', // Alinea los botones en una fila horizontal

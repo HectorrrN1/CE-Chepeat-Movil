@@ -8,6 +8,17 @@ import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
 import { router } from 'expo-router';
 
+interface ProductData {
+    name: string;
+    description: string;
+    price: number;
+    stock: number;
+    measure: string;
+    deliveryTime: string;
+    idSeller: string;
+    imageUrl: string; // URL de la imagen
+}
+
 export default function AddProductScreen() {
     const navigation = useNavigation(); // Usar el hook de navegación
     const [price, setPrice] = useState('');
@@ -51,75 +62,33 @@ export default function AddProductScreen() {
     }, []);
 
 
-    const handleSave = async () => {
-        if (!name || !price || !deliveryDateTime || !description || !stock || !measure || !idSeller) {
-            Alert.alert('Error', 'Por favor completa todos los campos');
-            return;
-        }
-    
-        try {
-            // Obtener los datos de usuario almacenados en SecureStore
-            const userDataString = await SecureStore.getItemAsync('userData');
-            if (!userDataString) {
-                console.error('Error: No se encontraron los datos del usuario');
-                Alert.alert('Error', 'No se encontraron los datos del usuario.');
-                return;
-            }
-    
-            // Parsear los datos de usuario para obtener el token
-            const userData = JSON.parse(userDataString);
-            const token = userData.token;  // Aquí obtenemos el token desde userData
-    
-            if (!token) {
-                console.error('Error: No se encontró el token de usuario');
-                Alert.alert('Error', 'No se encontró el token de usuario.');
-                return;
-            }
-    
-            const response = await axios.post(
-                'https://backend-j959.onrender.com/api/Product/AddProduct',
-                {
-                    name,
-                    description,
-                    price: parseFloat(price),
-                    stock: parseInt(stock),
-                    measure,
-                    deliveryTime: deliveryDateTime.toISOString(),
-                    idSeller: idSeller,
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,  // Usamos el token aquí
-                    },
-                }
-            );
-    
-            Alert.alert('Éxito', 'Producto guardado con éxito');
-    
-            // Redirigir a la pantalla /sellerProducts
-            router.replace('/sellerProducts'); // Esto redirige a /sellerProducts
-    
-        } catch (error) {
-            Alert.alert('Error', 'Hubo un problema al guardar el producto');
-            console.error(error);
-        }
-    };
-    
-
     const openImagePicker = async () => {
-        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
-            alert('Se necesitan permisos para acceder a la galería y la cámara');
+            alert('Se necesitan permisos para acceder a la galería');
             return;
         }
+
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
             quality: 1,
         });
-        if (!result.canceled) {
-            setImage(result.assets[0].uri);
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedImageUri = result.assets[0].uri;
+            const imageName = selectedImageUri.split('/').pop();
+
+            if (!imageName) {
+                console.error('No se pudo obtener el nombre de la imagen');
+                return;
+            }
+
+            setImage(selectedImageUri);
+
+            const imageId = generarUUID();
+            await uploadImage(selectedImageUri, imageId); // Subir la imagen
         }
     };
 
@@ -129,15 +98,156 @@ export default function AddProductScreen() {
             alert('Se necesitan permisos para acceder a la cámara');
             return;
         }
+
         const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true,
             aspect: [4, 3],
             quality: 1,
         });
+
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            setImage(result.assets[0].uri);
+            const selectedImageUri = result.assets[0].uri;
+            const imageName = selectedImageUri.split('/').pop();
+
+            if (!imageName) {
+                console.error('No se pudo obtener el nombre de la imagen');
+                return;
+            }
+
+            setImage(selectedImageUri);
+
+            const imageId = generarUUID();
+            await uploadImage(selectedImageUri, imageId); // Subir la imagen
         }
     };
+
+    // Función para generar un UUID único
+    const generarUUID = (): string => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    };
+
+    // Función para subir la imagen
+    const uploadImage = async (uri: string, imageId: string): Promise<string> => {
+        const imageName = uri.split('/').pop() || 'default-image-name.jpg';
+        const fileType = uri.split('.').pop() || 'jpeg';
+
+        const formData = new FormData();
+        formData.append('Image', {
+            uri,
+            name: imageName,
+            type: `image/${fileType}`,
+        } as any);
+        formData.append('ImageId', imageId);
+
+        console.log('Archivo de imagen:', uri);
+        console.log('ID de la imagen:', imageId);
+
+        try {
+            const userDataString = await SecureStore.getItemAsync('userData');
+            if (!userDataString) {
+                throw new Error('No se encontraron los datos del usuario.');
+            }
+
+            const userData = JSON.parse(userDataString);
+            const token = userData.token;
+
+            if (!token) {
+                throw new Error('No se encontró el token de usuario.');
+            }
+
+            const uploadResponse = await axios.post(
+                'https://images-o944.onrender.com/api/Image/UploadImage',
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
+
+            console.log('Respuesta de la API:', uploadResponse.data);
+            if (uploadResponse.status === 200) {
+                alert('Imagen subida correctamente');
+                return uploadResponse.data.Path; // Devuelve la URL de la imagen
+            }
+
+            throw new Error('Error al subir la imagen');
+        } catch (error) {
+            console.error('Error al subir la imagen:', error);
+            alert('Error al subir la imagen. Por favor, inténtalo de nuevo.');
+            throw new Error('Error al subir la imagen');
+        }
+    };
+
+
+    const handleSave = async () => {
+        if (!name || !price || !deliveryDateTime || !description || !stock || !measure || !idSeller || !image) {
+            Alert.alert('Error', 'Por favor completa todos los campos, incluyendo la imagen');
+            return;
+        }
+    
+        try {
+            const userDataString = await SecureStore.getItemAsync('userData');
+            if (!userDataString) {
+                console.error('Error: No se encontraron los datos del usuario');
+                Alert.alert('Error', 'No se encontraron los datos del usuario.');
+                return;
+            }
+    
+            const userData = JSON.parse(userDataString);
+            const token = userData.token;
+    
+            if (!token) {
+                console.error('Error: No se encontró el token de usuario');
+                Alert.alert('Error', 'No se encontró el token de usuario.');
+                return;
+            }
+    
+            const uri = image;
+            const imageId = generarUUID(); // Genera o usa un ID único aquí
+    
+            // Llama a la función para subir la imagen y obtener el path completo
+            const imageUrl = await uploadImage(uri, imageId);  // Aquí se obtiene el path completo de la imagen
+    
+            // Ahora creamos el objeto con todos los datos del producto, incluyendo la URL de la imagen
+            const productData: ProductData = {
+                name,
+                description,
+                price: parseFloat(price),
+                stock: parseInt(stock),
+                measure,
+                deliveryTime: deliveryDateTime.toISOString(),
+                idSeller: idSeller,
+                imageUrl,  // Aquí estamos incluyendo el path de la imagen
+            };
+    
+            // Enviamos el producto con la URL de la imagen al backend
+            const productResponse = await axios.post(
+                'https://backend-j959.onrender.com/api/Product/AddProduct',
+                productData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+    
+            Alert.alert('Éxito', 'Producto guardado con éxito');
+            router.replace('/sellerProducts');
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Hubo un problema al guardar el producto');
+        }
+    };
+    
+    
+
 
     return (
         <SafeAreaView style={styles.container}>

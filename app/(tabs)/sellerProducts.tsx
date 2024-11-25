@@ -353,10 +353,9 @@ const styles = StyleSheet.create({
     color: 'red',
   },
   noProductsText: {
-    marginHorizontal: 20, 
-    marginVertical: 10, 
-    fontSize: 16, 
-    color: '#666',
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 20,
   },
   navbar: {
     flexDirection: 'row',

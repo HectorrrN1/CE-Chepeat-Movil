@@ -1,82 +1,67 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
-interface MenuItemProps {
-  icon: keyof typeof Feather.glyphMap;
-  title: string;
-  onPress: () => void; // Prop para la función de navegación
+interface SellerData {
+  fullname: string;
+  storeName: string;
+  isSeller: boolean;
+  isBuyer: boolean;
+  email: string;
 }
-
-const MenuItem: FC<MenuItemProps> = ({ icon, title, onPress }) => (
-  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <Feather name={icon} size={24} color="black" />
-    <Text style={styles.menuItemText}>{title}</Text>
-    <Feather name="chevron-right" size={24} color="black" style={styles.menuItemArrow} />
-  </TouchableOpacity>
-);
 
 export default function ProfileScreen() {
   const router = useRouter(); // Hook para navegar entre pantallas
-  
+  const [sellerData, setSellerData] = useState<SellerData | null>(null);
+
+  useEffect(() => {
+    const loadSellerData = async () => {
+      try {
+        const storedSellerData = await SecureStore.getItemAsync('sellerData');
+        if (storedSellerData) {
+          const parsedData = JSON.parse(storedSellerData);
+          setSellerData(parsedData);
+          console.log("Datos cargados en Sidebar:", parsedData);
+        } else {
+          console.log("No se encontraron datos en SecureStore");
+        }
+      } catch (error) {
+        console.error("Error al cargar sellerData:", error);
+      }
+    };
+
+    loadSellerData();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Perfil</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.profileInfo}>
-          <Image
-            source={require('@/assets/images/profile.jpg')}
-            style={styles.avatar}
-          />
-          <Text style={styles.userName}>Usuario</Text>
-          <Text style={styles.userHandle}>@usuarioforaneo</Text>
+      <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+            {sellerData ? sellerData.storeName.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+          <Text style={styles.greeting}>Hola</Text>
+          <Text style={styles.username}>
+          {sellerData ?.storeName}
+          </Text>
         </View>
-        <View style={styles.menuItems}>
-          <MenuItem 
-            icon="user" 
-            title="Mi información" 
-            onPress={() => {
-              console.log('Navigating to Mi información');
-              router.push('/explore'); 
-            }} 
-          />
-          {/*
-          <MenuItem 
-            icon="shield" 
-            title="Políticas y privacidad" 
-            onPress={() => {
-              console.log('Navigating to Políticas y privacidad');
-              router.push('/explore'); 
-            }} 
-          />
-          <MenuItem 
-            icon="edit" 
-            title="Editar perfil" 
-            onPress={() => {
-              console.log('Navigating to Editar perfil');
-              router.push('/explore'); 
-            }} 
-          />*/}
-          <MenuItem 
-            icon="shopping-bag" 
-            title="Modo comprador" 
-            onPress={() => {
-              console.log('Navigating to Modo comprador');
-              router.push('/explore'); 
-            }} 
-          />
-          <MenuItem 
-            icon="log-out" 
-            title="Cerrar sesión" 
-            onPress={() => {
-              console.log('Logging out');
-              router.push('/'); 
-            }} 
-          />
+        
+        <View style={styles.optionsContainer}>
+
+          <TouchableOpacity style={styles.optionItem}>
+            <Feather name="edit" size={24} color="black" />
+            <Text style={styles.optionText}>Editar perfil</Text>
+            <Ionicons name="chevron-forward" size={24} color="black" />
+          </TouchableOpacity>
         </View>
+
       </ScrollView>
       <View style={styles.navbar}>
         <TouchableOpacity onPress={() => router.push('/home')}>
@@ -115,44 +100,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#999', // Color gris claro para el título
   },
-  profileInfo: {
+  
+  /////////////////////////////
+
+  profileSection: {
     alignItems: 'center',
-    marginBottom: 30,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'black', // Color negro
-    marginBottom: 5,
-  },
-  userHandle: {
-    fontSize: 16,
-    color: '#555', // Gris oscuro
-  },
-  menuItems: {
     marginTop: 20,
   },
-  menuItem: {
-    flexDirection: 'row',
+  avatar: {
+    backgroundColor: '#4CAF50', // Puedes cambiar este color si lo deseas
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  greeting: {
+    fontSize: 18,
+    color: '#666',
+  },
+  username: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 5,
+  },
+  optionItem: {
+    backgroundColor: '#f1f1f1',
     paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0', // Línea inferior más clara
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  menuItemText: {
-    fontSize: 16,
-    color: 'black', // Color negro
-    marginLeft: 15,
-    flex: 1,
+  optionText: {
+    fontSize: 17,
   },
-  menuItemArrow: {
-    marginLeft: 'auto',
+  optionsContainer: {
+    paddingHorizontal: 20,
   },
   navbar: {
     flexDirection: 'row',

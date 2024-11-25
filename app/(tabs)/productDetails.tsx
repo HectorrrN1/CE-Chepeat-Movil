@@ -99,7 +99,7 @@ const ProductDetails = () => {
   const confirmPurchase = async () => {
     console.log("confirmPurchase fue llamado");
     setModalVisible(false);
-  
+
     try {
       // Obtener el token de autorización
       const token = await SecureStore.getItemAsync('userToken');
@@ -107,35 +107,35 @@ const ProductDetails = () => {
         console.warn('Token no encontrado');
         return;
       }
-  
+
       // Obtener los datos del usuario
       const userDataString = await SecureStore.getItemAsync('userData');
       console.log("Datos del usuario recuperados de SecureStore:", userDataString);
-  
+
       if (!userDataString) {
         console.warn('Datos del usuario no encontrados');
         return;
       }
-  
+
       // Acceder al id del comprador (idBuyer)
       const userData = JSON.parse(userDataString);
       const idBuyer = userData.user?.id; // Ajusta al formato almacenado
       console.log("idBuyer obtenido:", idBuyer);
-  
+
       // Validar que todos los datos necesarios están presentes
       if (!product?.id || !idBuyer) {
         console.warn('Faltan datos para realizar la compra.');
         return;
       }
-  
+
       // Crear el objeto de solicitud
       const purchaseRequest = {
         idProduct: product.id,
         idBuyer: idBuyer,
       };
-  
+
       console.log("Datos que se enviarán en la solicitud:", purchaseRequest);
-  
+
       // Realizar la solicitud a la API
       const response = await axios.post(
         'https://backend-j959.onrender.com/api/PurchaseRequest/Create',
@@ -147,9 +147,9 @@ const ProductDetails = () => {
           },
         }
       );
-  
+
       console.log('Respuesta de la API:', response.data);
-  
+
       // Redirigir al homeBuyer y mostrar el modal
       router.push('/homeBuyer'); // Redirige a la vista de buyer
       // Mostrar el modal en homeBuyer (se manejaría en esa vista)
@@ -160,10 +160,10 @@ const ProductDetails = () => {
         console.error('Error inesperado:', error);
       }
     }
-};
+  };
 
-  
-  
+
+
 
   const openMap = () => {
     if (product?.sellerData?.latitude && product?.sellerData?.longitude) {
